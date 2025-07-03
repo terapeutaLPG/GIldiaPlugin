@@ -1,0 +1,5 @@
+pl\gildia\managers\GildiaManager.class
+pl\gildia\GildiaPlugin.class
+pl\gildia\listeners\ChatListener.class
+pl\gildia\models\Gildia.class
+pl\gildia\commands\GildiaCommand.class

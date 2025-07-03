@@ -1,0 +1,22 @@
+name: GildiaPlugin
+version: 1.0
+main: pl.gildia.GildiaPlugin
+api-version: 1.20
+author: YourName
+description: Plugin do zarządzania gildiami
+softdepend: [Vault]
+
+commands:
+  gildia:
+    description: Główna komenda gildii
+    usage: /gildia <zaloz|info|infogracz|zapros|wyrzuc|opusc|zastepca|sojusz|usun|adminusun|czat>
+    permission: gildia.use
+    permission-message: Nie masz uprawnień do używania tej komendy!
+
+permissions:
+  gildia.use:
+    description: Pozwala na używanie podstawowych komend gildii
+    default: true
+  gildia.admin:
+    description: Pozwala na zarządzanie gildiami jako admin
+    default: op
