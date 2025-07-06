@@ -62,15 +62,19 @@ public class GildiaManager {
             Bukkit.broadcastMessage(message);
         }
 
+        // Aktualizuj tagi graczy
+        updatePlayerDisplayName(lider);
+
         return true;
     }
 
     public void deleteGildia(String nazwa) {
         Gildia gildia = gildie.get(nazwa.toLowerCase());
         if (gildia != null) {
-            // Usuń wszystkich graczy z mapy
+            // Usuń wszystkich graczy z mapy i zaktualizuj ich tagi
             for (UUID gracz : gildia.getCzlonkowie()) {
                 graczGildia.remove(gracz);
+                updatePlayerDisplayName(gracz);
             }
 
             // Usuń sojusze
@@ -296,13 +300,11 @@ public class GildiaManager {
         Player player = Bukkit.getPlayer(gracz);
         if (player != null && player.isOnline()) {
             // Znajdź PlayerDisplayListener z pluginu i wywołaj aktualizację
-            pl.gildia.listeners.PlayerDisplayListener displayListener = new pl.gildia.listeners.PlayerDisplayListener(plugin);
-            displayListener.updatePlayerDisplayName(player);
+            plugin.getPlayerDisplayListener().updatePlayerDisplayName(player);
         }
     }
 
     public void updateAllPlayersDisplayNames() {
-        pl.gildia.listeners.PlayerDisplayListener displayListener = new pl.gildia.listeners.PlayerDisplayListener(plugin);
-        displayListener.updateAllPlayersDisplayNames();
+        plugin.getPlayerDisplayListener().updateAllPlayersDisplayNames();
     }
 }

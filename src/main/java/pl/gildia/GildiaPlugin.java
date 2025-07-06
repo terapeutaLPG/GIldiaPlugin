@@ -11,12 +11,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import pl.gildia.commands.GildiaCommand;
 import pl.gildia.listeners.ChatListener;
 import pl.gildia.listeners.PlayerDisplayListener;
+import pl.gildia.listeners.TagDebugListener;
 import pl.gildia.managers.GildiaManager;
 
 public class GildiaPlugin extends JavaPlugin implements Listener {
 
     private static GildiaPlugin instance;
     private GildiaManager gildiaManager;
+    private PlayerDisplayListener playerDisplayListener;
     private File gildieFile;
     private FileConfiguration gildieConfig;
 
@@ -41,7 +43,9 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
 
         // Rejestracja listenerów
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
-        getServer().getPluginManager().registerEvents(new PlayerDisplayListener(this), this);
+        playerDisplayListener = new PlayerDisplayListener(this);
+        getServer().getPluginManager().registerEvents(playerDisplayListener, this);
+        getServer().getPluginManager().registerEvents(new TagDebugListener(this), this);
 
         getLogger().info("Plugin GildiaPlugin został włączony!");
     }
@@ -85,6 +89,10 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
 
     public GildiaManager getGildiaManager() {
         return gildiaManager;
+    }
+
+    public PlayerDisplayListener getPlayerDisplayListener() {
+        return playerDisplayListener;
     }
 
     public static GildiaPlugin getInstance() {
