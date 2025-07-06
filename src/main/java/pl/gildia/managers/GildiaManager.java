@@ -111,6 +111,10 @@ public class GildiaManager {
         gildia.dodajCzlonka(gracz);
         graczGildia.put(gracz, gildiaName.toLowerCase());
         saveGildie();
+
+        // Aktualizuj displayName gracza
+        updatePlayerDisplayName(gracz);
+
         return true;
     }
 
@@ -151,6 +155,10 @@ public class GildiaManager {
         }
 
         saveGildie();
+
+        // Aktualizuj displayName gracza
+        updatePlayerDisplayName(gracz);
+
         return true;
     }
 
@@ -217,6 +225,12 @@ public class GildiaManager {
             gildiaSection.set("zastepcy", zastepcy);
 
             gildiaSection.set("sojusze", gildia.getSojusze());
+            gildiaSection.set("zaproszeniaSojuszy", gildia.getZaproszeniaSojuszy());
+
+            // Zapisz datę założenia
+            if (gildia.getDataZalozenia() != null) {
+                gildiaSection.set("dataZalozenia", gildia.getDataZalozenia().getTime());
+            }
         }
 
         plugin.saveGildieConfig();
@@ -261,11 +275,34 @@ public class GildiaManager {
             List<String> sojusze = gildiaSection.getStringList("sojusze");
             gildia.setSojusze(new ArrayList<>(sojusze));
 
+            List<String> zaproszeniaSojuszy = gildiaSection.getStringList("zaproszeniaSojuszy");
+            gildia.setZaproszeniaSojuszy(new ArrayList<>(zaproszeniaSojuszy));
+
+            // Wczytaj datę założenia
+            if (gildiaSection.contains("dataZalozenia")) {
+                long timestamp = gildiaSection.getLong("dataZalozenia");
+                gildia.setDataZalozenia(new java.util.Date(timestamp));
+            }
+
             gildie.put(key, gildia);
         }
     }
 
     public Map<String, Gildia> getAllGildie() {
         return gildie;
+    }
+
+    public void updatePlayerDisplayName(UUID gracz) {
+        Player player = Bukkit.getPlayer(gracz);
+        if (player != null && player.isOnline()) {
+            // Znajdź PlayerDisplayListener z pluginu i wywołaj aktualizację
+            pl.gildia.listeners.PlayerDisplayListener displayListener = new pl.gildia.listeners.PlayerDisplayListener(plugin);
+            displayListener.updatePlayerDisplayName(player);
+        }
+    }
+
+    public void updateAllPlayersDisplayNames() {
+        pl.gildia.listeners.PlayerDisplayListener displayListener = new pl.gildia.listeners.PlayerDisplayListener(plugin);
+        displayListener.updateAllPlayersDisplayNames();
     }
 }

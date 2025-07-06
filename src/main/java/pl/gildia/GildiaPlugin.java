@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import pl.gildia.commands.GildiaCommand;
 import pl.gildia.listeners.ChatListener;
+import pl.gildia.listeners.PlayerDisplayListener;
 import pl.gildia.managers.GildiaManager;
 
 public class GildiaPlugin extends JavaPlugin implements Listener {
@@ -40,6 +41,7 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
 
         // Rejestracja listenerów
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerDisplayListener(this), this);
 
         getLogger().info("Plugin GildiaPlugin został włączony!");
     }

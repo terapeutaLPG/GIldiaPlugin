@@ -15,6 +15,8 @@ Plugin umożliwia tworzenie i zarządzanie gildiami na serwerze Minecraft. Zawie
 - **Szczegółowe informacje** - informacje o gildii i graczach
 - **Usuwanie gildii** - z systemem potwierdzenia dla bezpieczeństwa
 - **Tab-completion** - automatyczne uzupełnianie komend i argumentów
+- **System akceptacji sojuszy** - sojusze wymagają zgody obu stron
+- **Tagi gildii nad nickami** - wyświetlanie tagów gildii przed nickami graczy
 - **System zastępców** - dodatni gracze którzy mogą zarządzać gildią
 - **Punkty gildii** - system punktowy powiązany z członkami
 - **Sojusze** - możliwość zawierania sojuszy z innymi gildiami
@@ -41,8 +43,10 @@ Plugin umożliwia tworzenie i zarządzanie gildiami na serwerze Minecraft. Zawie
 - `/gildia usun` - Usuń gildię (wymaga potwierdzenia)
 - `/gildia zastepca dodaj <gracz>` - Mianuj zastępcę
 - `/gildia zastepca usun <gracz>` - Usuń zastępcę
-- `/gildia sojusz dodaj <gildia>` - Zawrzyj sojusz z gildią
-- `/gildia sojusz usun <gildia>` - Zerwij sojusz z gildią
+- `/gildia sojusz zapros <gildia>` - Wyślij zaproszenie do sojuszu
+- `/gildia sojusz akceptuj <gildia>` - Zaakceptuj zaproszenie do sojuszu
+- `/gildia sojusz odrzuc <gildia>` - Odrzuć zaproszenie do sojuszu
+- `/gildia sojusz usun <gildia>` - Zerwij istniejący sojusz
 
 ### Komendy administracyjne (tylko operatorzy):
 
@@ -58,6 +62,29 @@ Wiadomości będą widoczne dla:
 
 - Wszystkich członków Twojej gildii
 - Wszystkich członków sojuszniczych gildii
+
+## System sojuszy
+
+System sojuszy wymaga teraz akceptacji od obu stron:
+
+1. **Wysłanie zaproszenia**: `/gildia sojusz zapros <nazwa_gildii>`
+2. **Akceptacja zaproszenia**: `/gildia sojusz akceptuj <nazwa_gildii>`
+3. **Odrzucenie zaproszenia**: `/gildia sojusz odrzuc <nazwa_gildii>`
+4. **Zerwanie sojuszu**: `/gildia sojusz usun <nazwa_gildii>`
+
+### Widoczność zaproszeń:
+
+- Lider gildii widzi oczekujące zaproszenia w `/gildia info`
+- Po wysłaniu zaproszenia, lider docelowej gildii otrzymuje powiadomienie
+- Zaproszenia są zapisywane i widoczne do momentu akceptacji/odrzucenia
+
+## Tagi gildii
+
+Gracze należący do gildii mają automatycznie wyświetlany tag gildii przed nickiem:
+
+- Format: `[TAG] NickGracza`
+- Tagi są widoczne na liście graczy (TAB) i w czacie
+- Tagi są automatycznie aktualizowane przy dołączeniu/opuszczeniu gildii
 
 ## Instalacja
 
@@ -119,8 +146,10 @@ Plugin obsługuje automatyczne uzupełnianie komend:
 - `/gildia usun <TAB>` - pokaże opcję "potwierdz"
 - `/gildia zastepca <TAB>` - pokaże opcje dodaj/usun
 - `/gildia zastepca dodaj <TAB>` - pokaże członków Twojej gildii
-- `/gildia sojusz <TAB>` - pokaże opcje dodaj/usun
-- `/gildia sojusz dodaj <TAB>` - pokaże nazwy innych gildii
+- `/gildia sojusz <TAB>` - pokaże opcje zapros/akceptuj/odrzuc/usun
+- `/gildia sojusz zapros <TAB>` - pokaże nazwy innych gildii
+- `/gildia sojusz akceptuj <TAB>` - pokaże gildię która wysłała zaproszenie
+- `/gildia sojusz usun <TAB>` - pokaże nazwy sojuszniczych gildii
 - `/gildia adminusun <TAB>` - pokaże nazwy gildii (tylko dla adminów)
 
 ## Przykład użycia
@@ -129,8 +158,21 @@ Plugin obsługuje automatyczne uzupełnianie komend:
 /gildia zaloz DR Smoczy_Klan
 /gildia zapros Gracz123
 /gildia zastepca dodaj Gracz123
-/gildia sojusz dodaj Inny_Klan
+/gildia sojusz zapros Inny_Klan
 !Witajcie w naszej gildii!
+```
+
+### Przykład systemu sojuszy:
+
+```
+# Lider gildii A zaprasza gildię B do sojuszu
+/gildia sojusz zapros Inny_Klan
+
+# Lider gildii B akceptuje zaproszenie
+/gildia sojusz akceptuj Smoczy_Klan
+
+# Jeśli chce odrzucić:
+/gildia sojusz odrzuc Smoczy_Klan
 ```
 
 ### Przykład dla administratorów:

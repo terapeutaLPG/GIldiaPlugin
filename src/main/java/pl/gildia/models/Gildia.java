@@ -13,6 +13,7 @@ public class Gildia {
     private List<UUID> czlonkowie;
     private List<UUID> zastepcy;
     private List<String> sojusze;
+    private List<String> zaproszeniaSojuszy; // Zaproszenia do sojuszy oczekujące na akceptację
     private int punkty;
     private Date dataZalozenia;
 
@@ -23,6 +24,7 @@ public class Gildia {
         this.czlonkowie = new ArrayList<>();
         this.zastepcy = new ArrayList<>();
         this.sojusze = new ArrayList<>();
+        this.zaproszeniaSojuszy = new ArrayList<>();
         this.punkty = 0;
         this.dataZalozenia = new Date();
 
@@ -78,6 +80,14 @@ public class Gildia {
         this.sojusze = sojusze;
     }
 
+    public List<String> getZaproszeniaSojuszy() {
+        return zaproszeniaSojuszy;
+    }
+
+    public void setZaproszeniaSojuszy(List<String> zaproszeniaSojuszy) {
+        this.zaproszeniaSojuszy = zaproszeniaSojuszy;
+    }
+
     public int getPunkty() {
         return punkty;
     }
@@ -131,6 +141,20 @@ public class Gildia {
 
     public void usunSojusz(String gildia) {
         sojusze.remove(gildia);
+    }
+
+    public void dodajZaproszenieSojusz(String gildia) {
+        if (!zaproszeniaSojuszy.contains(gildia)) {
+            zaproszeniaSojuszy.add(gildia);
+        }
+    }
+
+    public void usunZaproszenieSojusz(String gildia) {
+        zaproszeniaSojuszy.remove(gildia);
+    }
+
+    public boolean czyMaZaproszenieSojusz(String gildia) {
+        return zaproszeniaSojuszy.contains(gildia);
     }
 
     public boolean czyLider(UUID gracz) {
