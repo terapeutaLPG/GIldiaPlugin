@@ -137,6 +137,45 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
                 handleAdminDeleteGildia(player, args[1], powod.toString());
                 break;
 
+            case "pkt":
+                // /gildia pkt -> pokazuje punkty twojej gildii (oraz twoje punkty)
+                if (args.length == 1) {
+                    Gildia my = gildiaManager.getGildiaByPlayer(player.getUniqueId());
+                    if (my == null) {
+                        player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
+                        return true;
+                    }
+                    int mojePkt = my.getPunktyGracza(player.getUniqueId());
+                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+                    player.sendMessage(ChatColor.AQUA + "Punkty gildii: " + ChatColor.WHITE + my.getPunkty());
+                    player.sendMessage(ChatColor.AQUA + "Twoje punkty: " + ChatColor.GREEN + mojePkt);
+                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+                    return true;
+                } else {
+                    // /gildia pkt <gracz> - tylko admin
+                    if (!player.hasPermission("gildia.admin")) {
+                        player.sendMessage(ChatColor.RED + "Nie masz uprawnień do tej komendy!");
+                        return true;
+                    }
+                    Player target = Bukkit.getPlayer(args[1]);
+                    if (target == null) {
+                        player.sendMessage(ChatColor.RED + "Gracz " + args[1] + " nie jest online!");
+                        return true;
+                    }
+                    Gildia g = gildiaManager.getGildiaByPlayer(target.getUniqueId());
+                    if (g == null) {
+                        player.sendMessage(ChatColor.YELLOW + "Gracz " + target.getName() + " nie należy do żadnej gildii.");
+                        return true;
+                    }
+                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+                    player.sendMessage(ChatColor.AQUA + "Gracz: " + ChatColor.WHITE + target.getName());
+                    player.sendMessage(ChatColor.AQUA + "Gildia: " + ChatColor.WHITE + "[" + g.getTag() + "] " + g.getNazwa());
+                    player.sendMessage(ChatColor.AQUA + "Punkty gracza: " + ChatColor.GREEN + g.getPunktyGracza(target.getUniqueId()));
+                    player.sendMessage(ChatColor.AQUA + "Punkty gildii: " + ChatColor.GREEN + g.getPunkty());
+                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+                    return true;
+                }
+
             case "ustawpkt":
                 if (!player.hasPermission("gildia.admin")) {
                     player.sendMessage(ChatColor.RED + "Nie masz uprawnień do używania tej komendy!");
@@ -534,7 +573,11 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 1) {
             // Pierwsza opcja - główne komendy
-            List<String> commands = Arrays.asList("zaloz", "info", "infogracz", "zapros", "wyrzuc", "opusc", "zastepca", "sojusz", "usun", "adminusun");
+            List<String> commands = new ArrayList<>(Arrays.asList("zaloz", "info", "infogracz", "zapros", "wyrzuc", "opusc", "zastepca", "sojusz", "usun", "pkt"));
+            // Dodaj admin-only komendy tylko jeśli gracz ma uprawnienie
+            if (player.hasPermission("gildia.admin")) {
+                commands.add("adminusun");
+            }
             for (String cmd : commands) {
                 if (cmd.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(cmd);
@@ -597,6 +640,16 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
                         for (String gildiaName : gildiaManager.getAllGildie().keySet()) {
                             if (gildiaName.toLowerCase().startsWith(args[1].toLowerCase())) {
                                 completions.add(gildiaManager.getGildia(gildiaName).getNazwa());
+                            }
+                        }
+                    }
+                    break;
+                case "pkt":
+                    // jeśli /gildia pkt <gracz> -> podpowiedz online graczy (widoczne tylko adminom)
+                    if (player.hasPermission("gildia.admin")) {
+                        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                            if (onlinePlayer.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
+                                completions.add(onlinePlayer.getName());
                             }
                         }
                     }
