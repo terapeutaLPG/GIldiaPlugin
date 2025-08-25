@@ -134,57 +134,6 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
                 handleAdminDeleteGildia(player, args[1], String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
                 break;
 
-            case "pkt":
-                if (!player.hasPermission("gildia.pkt")) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień."));
-                    return true;
-                }
-                if (args.length < 2) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia pkt <gracz>"));
-                    return true;
-                }
-                Player targetPkt = Bukkit.getPlayer(args[1]);
-                if (targetPkt == null) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz jest offline."));
-                    return true;
-                }
-                Gildia gildiaPkt = gildiaManager.getGildiaByPlayer(targetPkt.getUniqueId());
-                if (gildiaPkt == null) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz nie jest w żadnej gildii."));
-                    return true;
-                }
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d" + targetPkt.getName() + " &5posiada &d" + gildiaPkt.getPunktyGracza(targetPkt.getUniqueId()) + " &5punktów."));
-                break;
-
-            case "ustawpkt":
-                if (!player.hasPermission("gildia.admin")) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień."));
-                    return true;
-                }
-                if (args.length < 3) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia ustawpkt <gracz> <ilość>"));
-                    return true;
-                }
-                Player targetSetPkt = Bukkit.getPlayer(args[1]);
-                if (targetSetPkt == null) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz jest offline."));
-                    return true;
-                }
-                Gildia gildiaSetPkt = gildiaManager.getGildiaByPlayer(targetSetPkt.getUniqueId());
-                if (gildiaSetPkt == null) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz nie jest w żadnej gildii."));
-                    return true;
-                }
-                try {
-                    int pkt = Integer.parseInt(args[2]);
-                    gildiaSetPkt.setPunktyGracza(targetSetPkt.getUniqueId(), pkt);
-                    gildiaManager.saveGildie();
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Ustawiono &d" + pkt + " &5pkt dla gracza &d" + targetSetPkt.getName()));
-                } catch (NumberFormatException e) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cIlość punktów musi być liczbą."));
-                }
-                break;
-
             default:
                 sendHelp(player);
                 break;
@@ -249,8 +198,7 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fZastępcy: " + zastepcyList.substring(0, zastepcyList.length() - 2)));
         }
 
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPunkty: &d" + gildia.getPunkty()));
-
+        // Punkty gildii są teraz zarządzane przez PvP Stats plugin
         if (!gildia.getSojusze().isEmpty()) {
             StringBuilder sojuszeList = new StringBuilder();
             for (String sojuszNazwa : gildia.getSojusze()) {
@@ -273,15 +221,15 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
             OfflinePlayer członek = Bukkit.getOfflinePlayer(uuid);
             String ranga = "Czlonek";
             if (gildia.czyLider(uuid)) {
-                ranga = "Lider"; 
-            }else if (gildia.czyZastepca(uuid)) {
+                ranga = "Lider";
+            } else if (gildia.czyZastepca(uuid)) {
                 ranga = "Zastepca";
             }
 
             String czlonekName = członek.getName() != null ? członek.getName() : "Nieznany";
             String czlonekStatus = (członek.isOnline()) ? "&a(Online)" : "&c(Offline)";
-            int pkt = gildia.getPunktyGracza(uuid);
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8- &d" + czlonekName + " &7(&f" + ranga + "&7) &7- &f" + pkt + " pkt " + czlonekStatus));
+            // Punkty są teraz zarządzane przez PvP Stats plugin
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8- &d" + czlonekName + " &7(&f" + ranga + "&7) " + czlonekStatus));
         }
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5═══════════════════════════════"));
     }
@@ -541,7 +489,7 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGracz: &d" + targetPlayer.getName()));
         if (gildia != null) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGildia: &d" + gildia.getNazwa() + " [" + gildia.getTag() + "]"));
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPunkty: &d" + gildia.getPunktyGracza(targetPlayer.getUniqueId())));
+            // Punkty są teraz zarządzane przez PvP Stats plugin
         } else {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGildia: &7Brak"));
         }

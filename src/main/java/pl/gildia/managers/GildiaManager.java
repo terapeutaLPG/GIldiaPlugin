@@ -227,19 +227,12 @@ public class GildiaManager {
             gildiaSection.set("nazwa", gildia.getNazwa());
             gildiaSection.set("tag", gildia.getTag());
             gildiaSection.set("lider", gildia.getLider().toString());
-            gildiaSection.set("punkty", gildia.getPunkty());
 
             List<String> czlonkowie = new ArrayList<>();
             for (UUID uuid : gildia.getCzlonkowie()) {
                 czlonkowie.add(uuid.toString());
             }
             gildiaSection.set("czlonkowie", czlonkowie);
-
-            // Zapisz punkty członków
-            ConfigurationSection punktySection = gildiaSection.createSection("punktyCzlonkow");
-            for (Map.Entry<UUID, Integer> e : gildia.getPunktyCzlonkow().entrySet()) {
-                punktySection.set(e.getKey().toString(), e.getValue());
-            }
 
             List<String> zastepcy = new ArrayList<>();
             for (UUID uuid : gildia.getZastepcy()) {
@@ -274,10 +267,7 @@ public class GildiaManager {
             String nazwa = gildiaSection.getString("nazwa");
             String tag = gildiaSection.getString("tag");
             UUID lider = UUID.fromString(gildiaSection.getString("lider"));
-            int punkty = gildiaSection.getInt("punkty");
-
             Gildia gildia = new Gildia(nazwa, tag, lider);
-            gildia.setPunkty(punkty);
 
             List<String> czlonkowie = gildiaSection.getStringList("czlonkowie");
             List<UUID> czlonkowieUUID = new ArrayList<>();
@@ -300,22 +290,6 @@ public class GildiaManager {
 
             List<String> zaproszeniaSojuszy = gildiaSection.getStringList("zaproszeniaSojuszy");
             gildia.setZaproszeniaSojuszy(new ArrayList<>(zaproszeniaSojuszy));
-
-            // Wczytaj punkty członków
-            if (gildiaSection.contains("punktyCzlonkow")) {
-                ConfigurationSection punktySection = gildiaSection.getConfigurationSection("punktyCzlonkow");
-                Map<UUID, Integer> punktyMap = new HashMap<>();
-                for (String uuidStr : punktySection.getKeys(false)) {
-                    try {
-                        UUID id = UUID.fromString(uuidStr);
-                        int val = punktySection.getInt(uuidStr);
-                        punktyMap.put(id, val);
-                    } catch (Exception ex) {
-                        // ignore malformed
-                    }
-                }
-                gildia.setPunktyCzlonkow(punktyMap);
-            }
 
             // Wczytaj datę założenia
             if (gildiaSection.contains("dataZalozenia")) {

@@ -58,16 +58,36 @@ public class PlayerDisplayListener implements Listener {
                 ranga = "Zastepca";
             }
 
-            // Ustaw tylko nick w TAB
-            player.setPlayerListName(player.getName());
+            // Sprawdź czy PlaceholderAPI i PvP Stats są dostępne
+            String pvpStats = "";
+            if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null &&
+                plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
+                try {
+                    // Używaj PlaceholderAPI do pobrania statystyk PvP Stats
+                    String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_kills%");
+                    String deaths = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_deaths%");
+                    String streak = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_streak%");
+                    pvpStats = " " + ChatColor.GOLD + "[K:" + kills + " D:" + deaths + " S:" + streak + "]";
+                } catch (Exception e) {
+                    // Jeśli wystąpi błąd, po prostu nie wyświetlaj statystyk
+                    pvpStats = "";
+                }
+            }
 
-            // Ustaw display name dla czatu: (ranga) [TAG] Nick (pkt)
-            int pkt = gildia.getPunktyGracza(player.getUniqueId());
-            String displayName = "(" + ranga + ") " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName() + ChatColor.GRAY + " (" + pkt + ")";
+            // Ustaw nazwę w TAB z PvP Stats: [TAG] Nick [K:X D:X S:X]
+            String tabName = ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName() + pvpStats;
+            player.setPlayerListName(tabName);
+
+            // Ustaw display name dla czatu: (ranga) [TAG] Nick [K:X D:X S:X]
+            String displayName = "(" + ranga + ") " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName() + pvpStats;
             player.setDisplayName(displayName);
+
+            // Aktualizuj scoreboard team dla tagów nad głowami
+            updateScoreboardTeam(player, gildia);
         } else {
             player.setPlayerListName(player.getName());
             player.setDisplayName(player.getName());
+            removeFromScoreboardTeam(player);
         }
     }
 
@@ -85,7 +105,7 @@ public class PlayerDisplayListener implements Listener {
         if (team == null) {
             team = gildiaScoreboard.registerNewTeam(teamName);
 
-            // Ustaw prefix (max 16 znaków w starszych wersjach)
+            // Ustaw prefix z tagiem gildii (max 16 znaków w starszych wersjach)
             String prefix = ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE;
             if (prefix.length() > 16) {
                 prefix = ChatColor.AQUA + "[" + gildia.getTag() + "]" + ChatColor.WHITE;
@@ -96,6 +116,19 @@ public class PlayerDisplayListener implements Listener {
             team.setCanSeeFriendlyInvisibles(false);
             team.setAllowFriendlyFire(true);
         }
+
+        // Ustaw suffix z PvP Stats lub pusty
+        String suffix = "";
+        if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null &&
+            plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
+            try {
+                String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_kills%");
+                suffix = ChatColor.GRAY + " [" + kills + "K]";
+            } catch (Exception e) {
+                suffix = "";
+            }
+        }
+        team.setSuffix(suffix);
 
         // Dodaj gracza do drużyny
         team.addEntry(player.getName());

@@ -6,5 +6,4 @@ pl\gildia\listeners\PlayerDisplayListener.class
 pl\gildia\listeners\TagDebugListener.class
 pl\gildia\managers\GildiaManager.class
 pl\gildia\listeners\ChatListener.class
-pl\gildia\listeners\KillListener.class
 pl\gildia\commands\GildiaCommand.class
