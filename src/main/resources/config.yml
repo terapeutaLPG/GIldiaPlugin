@@ -1,0 +1,9 @@
+# GildiaPlugin config
+
+# Format czatu globalnego
+# Zmienne:
+# {PREFIX} - ranga gracza z Vault (np. z LuckPerms)
+# {TAG} - tag gildii
+# {PLAYER} - nick gracza
+# {MESSAGE} - wiadomość
+chat-format: "{PREFIX} {TAG}{PLAYER}&7: &f{MESSAGE}"

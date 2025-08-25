@@ -21,33 +21,26 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
     private PlayerDisplayListener playerDisplayListener;
     private File gildieFile;
     private FileConfiguration gildieConfig;
+    private FileConfiguration mainConfig;
 
     @Override
     public void onEnable() {
         instance = this;
-
-        // Utworzenie folderów i plików
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
         }
-
+        saveDefaultConfig();
+        mainConfig = getConfig();
         createGildieFile();
-
-        // Inicjalizacja managerów
         gildiaManager = new GildiaManager(this);
-
-        // Rejestracja komend
         GildiaCommand gildiaCommand = new GildiaCommand(this);
         getCommand("gildia").setExecutor(gildiaCommand);
         getCommand("gildia").setTabCompleter(gildiaCommand);
-
-        // Rejestracja listenerów
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
         playerDisplayListener = new PlayerDisplayListener(this);
         getServer().getPluginManager().registerEvents(playerDisplayListener, this);
         getServer().getPluginManager().registerEvents(new TagDebugListener(this), this);
         getServer().getPluginManager().registerEvents(new pl.gildia.listeners.KillListener(this), this);
-
         getLogger().info("Plugin GildiaPlugin został włączony!");
     }
 

@@ -9,7 +9,7 @@ softdepend: [Vault]
 commands:
   gildia:
     description: Główna komenda gildii
-  usage: /gildia <zaloz|info|infogracz|zapros|wyrzuc|opusc|zastepca|sojusz|usun|pkt|adminusun|czat>
+    usage: /gildia <zaloz|info|infogracz|zapros|wyrzuc|opusc|zastepca|sojusz|usun|pkt|adminusun|czat>
     permission: gildia.use
     permission-message: Nie masz uprawnień do używania tej komendy!
 

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -41,17 +42,19 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        switch (args[0].toLowerCase()) {
+        String sub = args[0].toLowerCase();
+
+        switch (sub) {
             case "zaloz":
                 if (args.length < 3) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia zaloz <tag> <nazwa>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia zaloz <tag> <nazwa>"));
                     return true;
                 }
-                handleCreateGildia(player, args[1], args[2]);
+                handleCreateGildia(player, args[1], String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
                 break;
 
             case "info":
-                if (args.length < 2) {
+                if (args.length == 1) {
                     handleOwnGildiaInfo(player);
                 } else {
                     handleGildiaInfo(player, args[1]);
@@ -60,38 +63,40 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
             case "infogracz":
                 if (args.length < 2) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia infogracz <gracz>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia infogracz <gracz>"));
                     return true;
                 }
-                Player targetPlayer = Bukkit.getPlayer(args[1]);
-                if (targetPlayer == null) {
-                    player.sendMessage(ChatColor.RED + "Gracz " + args[1] + " nie jest online!");
+                Player targetInfo = Bukkit.getPlayer(args[1]);
+                if (targetInfo == null) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz jest offline."));
                     return true;
                 }
-                handlePlayerInfo(player, targetPlayer);
+                handlePlayerInfo(player, targetInfo);
                 break;
 
             case "usun":
-                if (args.length < 2) {
-                    handleDeleteGildia(player, false);
-                } else if (args[1].equalsIgnoreCase("potwierdz")) {
-                    handleDeleteGildia(player, true);
-                } else {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia usun lub /gildia usun potwierdz");
-                }
+                handleDeleteGildia(player, args.length > 1 && args[1].equalsIgnoreCase("potwierdz"));
                 break;
 
             case "zapros":
                 if (args.length < 2) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia zapros <gracz>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia zapros <gracz>"));
                     return true;
                 }
                 handleInvitePlayer(player, args[1]);
                 break;
 
+            case "dolacz":
+                if (args.length < 2) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia dolacz <nazwa gildii>"));
+                    return true;
+                }
+                handleJoinGildia(player, args[1]);
+                break;
+
             case "wyrzuc":
                 if (args.length < 2) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia wyrzuc <gracz>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia wyrzuc <gracz>"));
                     return true;
                 }
                 handleKickPlayer(player, args[1]);
@@ -103,7 +108,7 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
             case "zastepca":
                 if (args.length < 3) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia zastepca <dodaj/usun> <gracz>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia zastepca <dodaj|usun> <gracz>"));
                     return true;
                 }
                 handleDeputy(player, args[1], args[2]);
@@ -111,7 +116,7 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
             case "sojusz":
                 if (args.length < 3) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia sojusz <zapros/akceptuj/odrzuc/usun> <gildia>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia sojusz <zapros|akceptuj|odrzuc|usun> <gildia>"));
                     return true;
                 }
                 handleAlliance(player, args[1], args[2]);
@@ -119,90 +124,64 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
             case "adminusun":
                 if (!player.hasPermission("gildia.admin")) {
-                    player.sendMessage(ChatColor.RED + "Nie masz uprawnień do używania tej komendy!");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień."));
                     return true;
                 }
                 if (args.length < 3) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia adminusun <nazwa_gildii> <powód>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia adminusun <nazwa_gildii> <powód>"));
                     return true;
                 }
-                // Łącz wszystkie argumenty od 2 jako powód
-                StringBuilder powod = new StringBuilder();
-                for (int i = 2; i < args.length; i++) {
-                    powod.append(args[i]);
-                    if (i < args.length - 1) {
-                        powod.append(" ");
-                    }
-                }
-                handleAdminDeleteGildia(player, args[1], powod.toString());
+                handleAdminDeleteGildia(player, args[1], String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
                 break;
 
             case "pkt":
-                // /gildia pkt -> pokazuje punkty twojej gildii (oraz twoje punkty)
-                if (args.length == 1) {
-                    Gildia my = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-                    if (my == null) {
-                        player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
-                        return true;
-                    }
-                    int mojePkt = my.getPunktyGracza(player.getUniqueId());
-                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-                    player.sendMessage(ChatColor.AQUA + "Punkty gildii: " + ChatColor.WHITE + my.getPunkty());
-                    player.sendMessage(ChatColor.AQUA + "Twoje punkty: " + ChatColor.GREEN + mojePkt);
-                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-                    return true;
-                } else {
-                    // /gildia pkt <gracz> - tylko admin
-                    if (!player.hasPermission("gildia.admin")) {
-                        player.sendMessage(ChatColor.RED + "Nie masz uprawnień do tej komendy!");
-                        return true;
-                    }
-                    Player target = Bukkit.getPlayer(args[1]);
-                    if (target == null) {
-                        player.sendMessage(ChatColor.RED + "Gracz " + args[1] + " nie jest online!");
-                        return true;
-                    }
-                    Gildia g = gildiaManager.getGildiaByPlayer(target.getUniqueId());
-                    if (g == null) {
-                        player.sendMessage(ChatColor.YELLOW + "Gracz " + target.getName() + " nie należy do żadnej gildii.");
-                        return true;
-                    }
-                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-                    player.sendMessage(ChatColor.AQUA + "Gracz: " + ChatColor.WHITE + target.getName());
-                    player.sendMessage(ChatColor.AQUA + "Gildia: " + ChatColor.WHITE + "[" + g.getTag() + "] " + g.getNazwa());
-                    player.sendMessage(ChatColor.AQUA + "Punkty gracza: " + ChatColor.GREEN + g.getPunktyGracza(target.getUniqueId()));
-                    player.sendMessage(ChatColor.AQUA + "Punkty gildii: " + ChatColor.GREEN + g.getPunkty());
-                    player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+                if (!player.hasPermission("gildia.pkt")) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień."));
                     return true;
                 }
+                if (args.length < 2) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia pkt <gracz>"));
+                    return true;
+                }
+                Player targetPkt = Bukkit.getPlayer(args[1]);
+                if (targetPkt == null) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz jest offline."));
+                    return true;
+                }
+                Gildia gildiaPkt = gildiaManager.getGildiaByPlayer(targetPkt.getUniqueId());
+                if (gildiaPkt == null) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz nie jest w żadnej gildii."));
+                    return true;
+                }
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d" + targetPkt.getName() + " &5posiada &d" + gildiaPkt.getPunktyGracza(targetPkt.getUniqueId()) + " &5punktów."));
+                break;
 
             case "ustawpkt":
                 if (!player.hasPermission("gildia.admin")) {
-                    player.sendMessage(ChatColor.RED + "Nie masz uprawnień do używania tej komendy!");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień."));
                     return true;
                 }
                 if (args.length < 3) {
-                    player.sendMessage(ChatColor.RED + "Użyj: /gildia ustawpkt <gracz> <punkty>");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia ustawpkt <gracz> <ilość>"));
                     return true;
                 }
-                Player tgt = Bukkit.getPlayer(args[1]);
-                if (tgt == null) {
-                    player.sendMessage(ChatColor.RED + "Gracz " + args[1] + " nie jest online!");
+                Player targetSetPkt = Bukkit.getPlayer(args[1]);
+                if (targetSetPkt == null) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz jest offline."));
+                    return true;
+                }
+                Gildia gildiaSetPkt = gildiaManager.getGildiaByPlayer(targetSetPkt.getUniqueId());
+                if (gildiaSetPkt == null) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz nie jest w żadnej gildii."));
                     return true;
                 }
                 try {
-                    int value = Integer.parseInt(args[2]);
-                    Gildia gildia = gildiaManager.getGildiaByPlayer(tgt.getUniqueId());
-                    if (gildia == null) {
-                        player.sendMessage(ChatColor.RED + "Gracz nie należy do żadnej gildii!");
-                        return true;
-                    }
-                    gildia.setPunktyGracza(tgt.getUniqueId(), value);
+                    int pkt = Integer.parseInt(args[2]);
+                    gildiaSetPkt.setPunktyGracza(targetSetPkt.getUniqueId(), pkt);
                     gildiaManager.saveGildie();
-                    gildiaManager.updatePlayerDisplayName(tgt.getUniqueId());
-                    player.sendMessage(ChatColor.GREEN + "Ustawiono punkty gracza " + tgt.getName() + " na " + value);
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Ustawiono &d" + pkt + " &5pkt dla gracza &d" + targetSetPkt.getName()));
                 } catch (NumberFormatException e) {
-                    player.sendMessage(ChatColor.RED + "Niepoprawna liczba: " + args[2]);
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cIlość punktów musi być liczbą."));
                 }
                 break;
 
@@ -216,24 +195,21 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
     private void handleCreateGildia(Player player, String tag, String nazwa) {
         if (tag.length() < 2 || tag.length() > 4) {
-            player.sendMessage(ChatColor.RED + "Tag gildii musi mieć od 2 do 4 znaków!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTag musi mieć od 2 do 4 znaków."));
             return;
         }
 
         if (gildiaManager.createGildia(nazwa, tag, player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN + "Pomyślnie założono gildię " + ChatColor.AQUA + "[" + tag + "] " + ChatColor.YELLOW + nazwa);
+            // Wiadomość o sukcesie jest wysyłana globalnie z GildiaManager
         } else {
-            player.sendMessage(ChatColor.RED + "Nie można założyć gildii! Możliwe przyczyny:");
-            player.sendMessage(ChatColor.RED + "- Już należysz do gildii");
-            player.sendMessage(ChatColor.RED + "- Gildia o tej nazwie już istnieje");
-            player.sendMessage(ChatColor.RED + "- Tag jest już zajęty");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTaka gildia już istnieje lub jesteś już w innej gildii."));
         }
     }
 
     private void handleOwnGildiaInfo(Player player) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
         if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie należysz do żadnej gildii."));
             return;
         }
         showGildiaInfo(player, gildia);
@@ -242,550 +218,347 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
     private void handleGildiaInfo(Player player, String nazwa) {
         Gildia gildia = gildiaManager.getGildia(nazwa);
         if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Gildia o nazwie " + nazwa + " nie istnieje!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
             return;
         }
         showGildiaInfo(player, gildia);
     }
 
     private void showGildiaInfo(Player player, Gildia gildia) {
-        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-        player.sendMessage(ChatColor.AQUA + "Informacje o gildii:");
-        player.sendMessage(ChatColor.YELLOW + "Nazwa: " + ChatColor.WHITE + gildia.getNazwa());
-        player.sendMessage(ChatColor.YELLOW + "Tag: " + ChatColor.AQUA + "[" + gildia.getTag() + "]");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5═══════════════════════════════"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&dInformacje o gildii:"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fNazwa: &d" + gildia.getNazwa()));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fTag: &d[" + gildia.getTag() + "]"));
 
-        // Data założenia
         java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("dd.MM.yyyy HH:mm");
-        player.sendMessage(ChatColor.YELLOW + "Data założenia: " + ChatColor.WHITE + dateFormat.format(gildia.getDataZalozenia()));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fData założenia: &d" + dateFormat.format(gildia.getDataZalozenia())));
 
-        // Lider
-        Player lider = Bukkit.getPlayer(gildia.getLider());
-        String liderName = lider != null ? lider.getName() : "OFFLINE";
-        String liderStatus = lider != null && lider.isOnline() ? ChatColor.GREEN + " (Online)" : ChatColor.RED + " (Offline)";
-        player.sendMessage(ChatColor.YELLOW + "Lider: " + ChatColor.GOLD + liderName + liderStatus);
+        OfflinePlayer lider = Bukkit.getOfflinePlayer(gildia.getLider());
+        String liderName = lider.getName() != null ? lider.getName() : "Nieznany";
+        String liderStatus = (lider.isOnline()) ? "&a (Online)" : "&c (Offline)";
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fLider: &d" + liderName + liderStatus));
 
-        // Zastępcy
         if (!gildia.getZastepcy().isEmpty()) {
-            player.sendMessage(ChatColor.YELLOW + "Zastępcy (" + gildia.getZastepcy().size() + "):");
+            StringBuilder zastepcyList = new StringBuilder();
             for (UUID uuid : gildia.getZastepcy()) {
-                Player zastepca = Bukkit.getPlayer(uuid);
-                String zastepcaname = zastepca != null ? zastepca.getName() : "OFFLINE";
-                String zastepcastatus = zastepca != null && zastepca.isOnline() ? ChatColor.GREEN + " (Online)" : ChatColor.RED + " (Offline)";
-                player.sendMessage(ChatColor.WHITE + "- " + ChatColor.YELLOW + zastepcaname + zastepcastatus);
+                OfflinePlayer zastepca = Bukkit.getOfflinePlayer(uuid);
+                String zastepcaName = zastepca.getName() != null ? zastepca.getName() : "Nieznany";
+                String zastepcaStatus = (zastepca.isOnline()) ? "&a(Online)" : "&c(Offline)";
+                zastepcyList.append("&d").append(zastepcaName).append(" ").append(zastepcaStatus).append(", ");
             }
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fZastępcy: " + zastepcyList.substring(0, zastepcyList.length() - 2)));
         }
 
-        player.sendMessage(ChatColor.YELLOW + "Punkty: " + ChatColor.GREEN + gildia.getPunkty());
-        player.sendMessage(ChatColor.YELLOW + "Wszyscy członkowie (" + gildia.getCzlonkowie().size() + "):");
-
-        for (UUID uuid : gildia.getCzlonkowie()) {
-            Player member = Bukkit.getPlayer(uuid);
-            String memberName = member != null ? member.getName() : "OFFLINE";
-            String memberStatus = member != null && member.isOnline() ? ChatColor.GREEN + " (Online)" : ChatColor.RED + " (Offline)";
-            String status = "";
-            if (gildia.czyLider(uuid)) {
-                status = ChatColor.GOLD + " [LIDER]";
-            } else if (gildia.czyZastepca(uuid)) {
-                status = ChatColor.YELLOW + " [ZASTĘPCA]";
-            } else {
-                status = ChatColor.WHITE + " [CZŁONEK]";
-            }
-            player.sendMessage(ChatColor.WHITE + "- " + memberName + status + memberStatus);
-        }
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPunkty: &d" + gildia.getPunkty()));
 
         if (!gildia.getSojusze().isEmpty()) {
-            player.sendMessage(ChatColor.YELLOW + "Sojusze (" + gildia.getSojusze().size() + "):");
-            for (String sojusz : gildia.getSojusze()) {
-                Gildia sojuszGildia = gildiaManager.getGildia(sojusz);
-                if (sojuszGildia != null) {
-                    player.sendMessage(ChatColor.WHITE + "- " + ChatColor.AQUA + "[" + sojuszGildia.getTag() + "] " + ChatColor.WHITE + sojuszGildia.getNazwa());
-                } else {
-                    player.sendMessage(ChatColor.WHITE + "- " + sojusz);
+            StringBuilder sojuszeList = new StringBuilder();
+            for (String sojuszNazwa : gildia.getSojusze()) {
+                Gildia sojusz = gildiaManager.getGildia(sojuszNazwa);
+                if (sojusz != null) {
+                    sojuszeList.append("&d").append(sojusz.getNazwa()).append(" [&d").append(sojusz.getTag()).append("&d], ");
                 }
+            }
+            if (sojuszeList.length() > 2) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fSojusze: " + sojuszeList.substring(0, sojuszeList.length() - 2)));
             }
         }
 
-        // Pokaż zaproszenia do sojuszy (tylko dla lidera)
         if (gildia.czyLider(player.getUniqueId()) && !gildia.getZaproszeniaSojuszy().isEmpty()) {
-            player.sendMessage(ChatColor.GOLD + "Zaproszenia do sojuszy (" + gildia.getZaproszeniaSojuszy().size() + "):");
-            for (String zaproszenie : gildia.getZaproszeniaSojuszy()) {
-                Gildia zaproszeniaGildia = gildiaManager.getGildia(zaproszenie);
-                if (zaproszeniaGildia != null) {
-                    player.sendMessage(ChatColor.WHITE + "- " + ChatColor.AQUA + "[" + zaproszeniaGildia.getTag() + "] " + ChatColor.WHITE + zaproszeniaGildia.getNazwa());
-                    player.sendMessage(ChatColor.GRAY + "  Użyj: /gildia sojusz akceptuj " + zaproszeniaGildia.getNazwa());
-                }
-            }
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fOczekujące zaproszenia do sojuszu: &d" + String.join(", ", gildia.getZaproszeniaSojuszy())));
         }
 
-        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fWszyscy członkowie (" + gildia.getCzlonkowie().size() + "):"));
+        for (UUID uuid : gildia.getCzlonkowie()) {
+            OfflinePlayer członek = Bukkit.getOfflinePlayer(uuid);
+            String ranga = "Czlonek";
+            if (gildia.czyLider(uuid)) {
+                ranga = "Lider"; 
+            }else if (gildia.czyZastepca(uuid)) {
+                ranga = "Zastepca";
+            }
+
+            String czlonekName = członek.getName() != null ? członek.getName() : "Nieznany";
+            String czlonekStatus = (członek.isOnline()) ? "&a(Online)" : "&c(Offline)";
+            int pkt = gildia.getPunktyGracza(uuid);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8- &d" + czlonekName + " &7(&f" + ranga + "&7) &7- &f" + pkt + " pkt " + czlonekStatus));
+        }
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5═══════════════════════════════"));
     }
 
     private void handleInvitePlayer(Player player, String targetName) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-        if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
-            return;
-        }
-
-        if (!gildia.czyMozeZarzadzac(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Nie masz uprawnień do zapraszania graczy!");
+        if (gildia == null || !gildia.czyMozeZarzadzac(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień w gildii, aby to zrobić."));
             return;
         }
 
         Player target = Bukkit.getPlayer(targetName);
         if (target == null) {
-            player.sendMessage(ChatColor.RED + "Gracz " + targetName + " nie jest online!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGracz jest offline."));
             return;
         }
 
-        if (gildiaManager.addPlayerToGildia(target.getUniqueId(), gildia.getNazwa())) {
-            player.sendMessage(ChatColor.GREEN + "Gracz " + target.getName() + " został dodany do gildii!");
-            target.sendMessage(ChatColor.GREEN + "Zostałeś dodany do gildii " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa());
+        if (gildiaManager.getGildiaByPlayer(target.getUniqueId()) != null) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTen gracz jest już w innej gildii."));
+            return;
+        }
+
+        gildiaManager.addInvite(target.getUniqueId(), gildia.getNazwa());
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Wysłano zaproszenie do gildii do gracza &d" + target.getName()));
+        target.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Otrzymałeś zaproszenie do gildii &d" + gildia.getNazwa() + "&5. Wpisz &d/gildia dolacz " + gildia.getNazwa() + " &5aby dołączyć."));
+    }
+
+    private void handleJoinGildia(Player player, String gildiaName) {
+        String invite = gildiaManager.getInvite(player.getUniqueId());
+        if (invite == null || !invite.equalsIgnoreCase(gildiaName)) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz zaproszenia do tej gildii."));
+            return;
+        }
+
+        if (gildiaManager.addPlayerToGildia(player.getUniqueId(), gildiaName)) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Dołączyłeś do gildii &d" + gildiaName));
+            gildiaManager.removeInvite(player.getUniqueId());
+            Gildia gildia = gildiaManager.getGildia(gildiaName);
+            if (gildia != null) {
+                gildia.broadcastToMembers("&d" + player.getName() + " &5dołączył do gildii!");
+            }
         } else {
-            player.sendMessage(ChatColor.RED + "Nie można dodać gracza do gildii! Możliwe że już należy do innej gildii.");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cWystąpił błąd podczas dołączania do gildii."));
         }
     }
 
     private void handleKickPlayer(Player player, String targetName) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-        if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
+        if (gildia == null || !gildia.czyMozeZarzadzac(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień w gildii, aby to zrobić."));
             return;
         }
 
-        if (!gildia.czyMozeZarzadzac(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Nie masz uprawnień do wyrzucania graczy!");
-            return;
-        }
-
-        Player target = Bukkit.getPlayer(targetName);
-        if (target == null) {
-            player.sendMessage(ChatColor.RED + "Gracz " + targetName + " nie jest online!");
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+        if (!gildia.czyCzlonek(target.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTego gracza nie ma w Twojej gildii."));
             return;
         }
 
         if (gildia.czyLider(target.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Nie możesz wyrzucić lidera gildii!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie możesz wyrzucić lidera gildii."));
+            return;
+        }
+
+        if (gildia.czyZastepca(target.getUniqueId()) && !gildia.czyLider(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cJako zastępca nie możesz wyrzucić innego zastępcy."));
             return;
         }
 
         if (gildiaManager.removePlayerFromGildia(target.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN + "Gracz " + target.getName() + " został wyrzucony z gildii!");
-            target.sendMessage(ChatColor.RED + "Zostałeś wyrzucony z gildii " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa());
-        } else {
-            player.sendMessage(ChatColor.RED + "Nie można wyrzucić gracza z gildii!");
+            gildia.broadcastToMembers("&d" + target.getName() + " &5został wyrzucony z gildii przez &d" + player.getName());
+            if (target.isOnline()) {
+                ((Player) target).sendMessage(ChatColor.translateAlternateColorCodes('&', "&cZostałeś wyrzucony z gildii."));
+            }
         }
     }
 
     private void handleLeaveGildia(Player player) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
         if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie należysz do żadnej gildii."));
             return;
         }
 
         if (gildia.czyLider(player.getUniqueId()) && gildia.getCzlonkowie().size() > 1) {
-            player.sendMessage(ChatColor.RED + "Nie możesz opuścić gildii jako lider! Najpierw przekaż przywództwo lub rozwiąż gildię.");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie możesz opuścić gildii, będąc liderem. Najpierw przekaż przywództwo lub usuń gildię."));
             return;
         }
 
         if (gildiaManager.removePlayerFromGildia(player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN + "Opuściłeś gildię " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa());
-        } else {
-            player.sendMessage(ChatColor.RED + "Nie można opuścić gildii!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Opuściłeś gildię."));
+            gildia.broadcastToMembers("&d" + player.getName() + " &5opuścił gildię.");
         }
     }
 
     private void handleDeputy(Player player, String action, String targetName) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-        if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
+        if (gildia == null || !gildia.czyLider(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie jesteś liderem gildii."));
             return;
         }
 
-        if (!gildia.czyLider(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Tylko lider może zarządzać zastępcami!");
-            return;
-        }
-
-        Player target = Bukkit.getPlayer(targetName);
-        if (target == null) {
-            player.sendMessage(ChatColor.RED + "Gracz " + targetName + " nie jest online!");
-            return;
-        }
-
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
         if (!gildia.czyCzlonek(target.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Gracz nie należy do tej gildii!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTen gracz nie jest w Twojej gildii."));
             return;
         }
 
         if (action.equalsIgnoreCase("dodaj")) {
+            if (gildia.czyZastepca(target.getUniqueId())) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTen gracz jest już zastępcą."));
+                return;
+            }
             gildia.dodajZastepce(target.getUniqueId());
-            player.sendMessage(ChatColor.GREEN + "Gracz " + target.getName() + " został mianowany zastępcą!");
-            target.sendMessage(ChatColor.GREEN + "Zostałeś mianowany zastępcą gildii " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa());
+            gildiaManager.saveGildie();
+            gildia.broadcastToMembers("&d" + target.getName() + " &5został mianowany na zastępcę przez &d" + player.getName());
         } else if (action.equalsIgnoreCase("usun")) {
+            if (!gildia.czyZastepca(target.getUniqueId())) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTen gracz nie jest zastępcą."));
+                return;
+            }
             gildia.usunZastepce(target.getUniqueId());
-            player.sendMessage(ChatColor.GREEN + "Gracz " + target.getName() + " został usunięty z pozycji zastępcy!");
-            target.sendMessage(ChatColor.YELLOW + "Zostałeś usunięty z pozycji zastępcy gildii " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa());
+            gildiaManager.saveGildie();
+            gildia.broadcastToMembers("&d" + target.getName() + " &5został zdegradowany z zastępcy przez &d" + player.getName());
         } else {
-            player.sendMessage(ChatColor.RED + "Użyj: /gildia zastepca <dodaj/usun> <gracz>");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia zastepca <dodaj|usun> <gracz>"));
         }
-
-        gildiaManager.saveGildie();
     }
 
     private void handleAlliance(Player player, String action, String targetGildiaName) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-        if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
-            return;
-        }
-
-        if (!gildia.czyLider(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Tylko lider może zarządzać sojuszami!");
+        if (gildia == null || !gildia.czyLider(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie jesteś liderem gildii."));
             return;
         }
 
         Gildia targetGildia = gildiaManager.getGildia(targetGildiaName);
         if (targetGildia == null) {
-            player.sendMessage(ChatColor.RED + "Gildia o nazwie " + targetGildiaName + " nie istnieje!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
             return;
         }
 
         if (gildia.getNazwa().equalsIgnoreCase(targetGildia.getNazwa())) {
-            player.sendMessage(ChatColor.RED + "Nie możesz zawrzeć sojuszu z własną gildią!");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie możesz zawrzeć sojuszu z własną gildią."));
             return;
         }
 
-        if (action.equalsIgnoreCase("zapros")) {
-            // Sprawdź czy już mają sojusz
-            if (gildia.getSojusze().contains(targetGildia.getNazwa().toLowerCase())) {
-                player.sendMessage(ChatColor.RED + "Już macie sojusz z tą gildią!");
-                return;
-            }
-
-            // Sprawdź czy już wysłano zaproszenie
-            if (targetGildia.czyMaZaproszenieSojusz(gildia.getNazwa().toLowerCase())) {
-                player.sendMessage(ChatColor.RED + "Już wysłano zaproszenie do sojuszu tej gildii!");
-                return;
-            }
-
-            // Wyślij zaproszenie
-            targetGildia.dodajZaproszenieSojusz(gildia.getNazwa().toLowerCase());
-            player.sendMessage(ChatColor.GREEN + "Wysłano zaproszenie do sojuszu gildii " + ChatColor.AQUA + "[" + targetGildia.getTag() + "] " + ChatColor.YELLOW + targetGildia.getNazwa());
-
-            // Powiadom lidera docelowej gildii
-            Player targetLider = Bukkit.getPlayer(targetGildia.getLider());
-            if (targetLider != null) {
-                targetLider.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-                targetLider.sendMessage(ChatColor.YELLOW + "Zaproszenie do sojuszu!");
-                targetLider.sendMessage(ChatColor.GREEN + "Gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.GREEN + " zaprasza do sojuszu!");
-                targetLider.sendMessage(ChatColor.WHITE + "Użyj: " + ChatColor.GREEN + "/gildia sojusz akceptuj " + gildia.getNazwa());
-                targetLider.sendMessage(ChatColor.WHITE + "Lub: " + ChatColor.RED + "/gildia sojusz odrzuc " + gildia.getNazwa());
-                targetLider.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-            }
-        } else if (action.equalsIgnoreCase("akceptuj")) {
-            // Sprawdź czy ma zaproszenie
-            if (!gildia.czyMaZaproszenieSojusz(targetGildia.getNazwa().toLowerCase())) {
-                player.sendMessage(ChatColor.RED + "Nie masz zaproszenia do sojuszu od tej gildii!");
-                return;
-            }
-
-            // Akceptuj sojusz
-            gildia.usunZaproszenieSojusz(targetGildia.getNazwa().toLowerCase());
-            gildia.dodajSojusz(targetGildia.getNazwa().toLowerCase());
-            targetGildia.dodajSojusz(gildia.getNazwa().toLowerCase());
-
-            player.sendMessage(ChatColor.GREEN + "Zaakceptowano sojusz z gildią " + ChatColor.AQUA + "[" + targetGildia.getTag() + "] " + ChatColor.YELLOW + targetGildia.getNazwa());
-
-            // Powiadom drugą gildię
-            Player targetLider = Bukkit.getPlayer(targetGildia.getLider());
-            if (targetLider != null) {
-                targetLider.sendMessage(ChatColor.GREEN + "Gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.GREEN + " zaakceptowała sojusz!");
-            }
-        } else if (action.equalsIgnoreCase("odrzuc")) {
-            // Sprawdź czy ma zaproszenie
-            if (!gildia.czyMaZaproszenieSojusz(targetGildia.getNazwa().toLowerCase())) {
-                player.sendMessage(ChatColor.RED + "Nie masz zaproszenia do sojuszu od tej gildii!");
-                return;
-            }
-
-            // Odrzuć sojusz
-            gildia.usunZaproszenieSojusz(targetGildia.getNazwa().toLowerCase());
-            player.sendMessage(ChatColor.RED + "Odrzucono zaproszenie do sojuszu od gildii " + ChatColor.AQUA + "[" + targetGildia.getTag() + "] " + ChatColor.YELLOW + targetGildia.getNazwa());
-
-            // Powiadom drugą gildię
-            Player targetLider = Bukkit.getPlayer(targetGildia.getLider());
-            if (targetLider != null) {
-                targetLider.sendMessage(ChatColor.RED + "Gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.RED + " odrzuciła zaproszenie do sojuszu!");
-            }
-        } else if (action.equalsIgnoreCase("usun")) {
-            // Sprawdź czy mają sojusz
-            if (!gildia.getSojusze().contains(targetGildia.getNazwa().toLowerCase())) {
-                player.sendMessage(ChatColor.RED + "Nie macie sojuszu z tą gildią!");
-                return;
-            }
-
-            // Usuń sojusz
-            gildia.usunSojusz(targetGildia.getNazwa().toLowerCase());
-            targetGildia.usunSojusz(gildia.getNazwa().toLowerCase());
-            player.sendMessage(ChatColor.RED + "Zerwano sojusz z gildią " + ChatColor.AQUA + "[" + targetGildia.getTag() + "] " + ChatColor.YELLOW + targetGildia.getNazwa());
-
-            // Powiadom drugą gildię
-            Player targetLider = Bukkit.getPlayer(targetGildia.getLider());
-            if (targetLider != null) {
-                targetLider.sendMessage(ChatColor.RED + "Gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.RED + " zerwała z wami sojusz!");
-            }
-        } else {
-            player.sendMessage(ChatColor.RED + "Użyj: /gildia sojusz <zapros/akceptuj/odrzuc/usun> <gildia>");
+        switch (action.toLowerCase()) {
+            case "zapros":
+                if (gildia.getSojusze().contains(targetGildia.getNazwa().toLowerCase())) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cMasz już sojusz z tą gildią."));
+                    return;
+                }
+                targetGildia.dodajZaproszenieSojusz(gildia.getNazwa());
+                gildiaManager.saveGildie();
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Wysłano zaproszenie do sojuszu do gildii &d" + targetGildia.getNazwa()));
+                Player targetLider = Bukkit.getPlayer(targetGildia.getLider());
+                if (targetLider != null) {
+                    targetLider.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Gildia &d" + gildia.getNazwa() + " &5chce zawrzeć z wami sojusz! Użyj &d/gildia sojusz akceptuj " + gildia.getNazwa()));
+                }
+                break;
+            case "akceptuj":
+                if (!gildia.czyMaZaproszenieSojusz(targetGildia.getNazwa())) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz zaproszenia do sojuszu od tej gildii."));
+                    return;
+                }
+                gildia.dodajSojusz(targetGildia.getNazwa());
+                targetGildia.dodajSojusz(gildia.getNazwa());
+                gildia.usunZaproszenieSojusz(targetGildia.getNazwa());
+                gildiaManager.saveGildie();
+                gildia.broadcastToMembers("&5Gildia &d" + gildia.getNazwa() + " &5zawarła sojusz z &d" + targetGildia.getNazwa());
+                targetGildia.broadcastToMembers("&5Gildia &d" + targetGildia.getNazwa() + " &5zawarła sojusz z &d" + gildia.getNazwa());
+                break;
+            case "odrzuc":
+                if (!gildia.czyMaZaproszenieSojusz(targetGildia.getNazwa())) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz zaproszenia do sojuszu od tej gildii."));
+                    return;
+                }
+                gildia.usunZaproszenieSojusz(targetGildia.getNazwa());
+                gildiaManager.saveGildie();
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5Odrzucono zaproszenie do sojuszu od gildii &d" + targetGildia.getNazwa()));
+                break;
+            case "usun":
+                if (!gildia.getSojusze().contains(targetGildia.getNazwa().toLowerCase())) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz sojuszu z tą gildią."));
+                    return;
+                }
+                gildia.usunSojusz(targetGildia.getNazwa());
+                targetGildia.usunSojusz(gildia.getNazwa());
+                gildiaManager.saveGildie();
+                gildia.broadcastToMembers("&dTwoja gildia zerwała sojusz z &d" + targetGildia.getNazwa());
+                targetGildia.broadcastToMembers("&dGildia &d" + gildia.getNazwa() + " &dzerwała z wami sojusz.");
+                break;
+            default:
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cPoprawne użycie: /gildia sojusz <zapros|akceptuj|odrzuc|usun> <gildia>"));
+                break;
         }
-
-        gildiaManager.saveGildie();
     }
 
     private void sendHelp(Player player) {
-        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-        player.sendMessage(ChatColor.AQUA + "Komendy gildii:");
-        player.sendMessage(ChatColor.YELLOW + "/gildia zaloz <tag> <nazwa>" + ChatColor.WHITE + " - Założ gildię");
-        player.sendMessage(ChatColor.YELLOW + "/gildia info [nazwa]" + ChatColor.WHITE + " - Informacje o gildii");
-        player.sendMessage(ChatColor.YELLOW + "/gildia infogracz <gracz>" + ChatColor.WHITE + " - Informacje o graczu");
-        player.sendMessage(ChatColor.YELLOW + "/gildia zapros <gracz>" + ChatColor.WHITE + " - Zaproś gracza");
-        player.sendMessage(ChatColor.YELLOW + "/gildia wyrzuc <gracz>" + ChatColor.WHITE + " - Wyrzuć gracza");
-        player.sendMessage(ChatColor.YELLOW + "/gildia opusc" + ChatColor.WHITE + " - Opuść gildię");
-        player.sendMessage(ChatColor.YELLOW + "/gildia usun" + ChatColor.WHITE + " - Usuń gildię (tylko lider)");
-        player.sendMessage(ChatColor.YELLOW + "/gildia zastepca <dodaj/usun> <gracz>" + ChatColor.WHITE + " - Zarządzaj zastępcami");
-        player.sendMessage(ChatColor.YELLOW + "/gildia sojusz <zapros/akceptuj/odrzuc/usun> <gildia>" + ChatColor.WHITE + " - Zarządzaj sojuszami");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5&m-----------------&d GildiaPlugin &5&m-----------------"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zaloz <tag> <nazwa> &7- Tworzy nową gildię"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia info [nazwa] &7- Informacje o gildii"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia infogracz <gracz> &7- Informacje o graczu"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zapros <gracz> &7- Zaprasza gracza do gildii"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia dolacz <nazwa> &7- Akceptuje zaproszenie do gildii"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia wyrzuc <gracz> &7- Wyrzuca gracza z gildii"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia opusc &7- Opuszcza gildię"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia usun &7- Usuwa Twoją gildię"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zastepca <dodaj|usun> <gracz> &7- Zarządza zastępcami"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia sojusz <zapros|akceptuj|odrzuc|usun> <gildia> &7- Zarządza sojuszami"));
         if (player.hasPermission("gildia.admin")) {
-            player.sendMessage(ChatColor.RED + "/gildia adminusun <gildia> <powód>" + ChatColor.WHITE + " - Usuń gildię (tylko admin)");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c/gildia adminusun <nazwa> <powod> &7- Usuwa gildię jako admin"));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c/gildia ustawpkt <gracz> <ilosc> &7- Ustawia punkty gracza"));
         }
-        player.sendMessage(ChatColor.GREEN + "Czat gildii: " + ChatColor.WHITE + "Napisz wiadomość zaczynającą się od " + ChatColor.YELLOW + "!");
-        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5&m--------------------------------------------------"));
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!(sender instanceof Player)) {
-            return new ArrayList<>();
-        }
-
-        Player player = (Player) sender;
-        List<String> completions = new ArrayList<>();
-
         if (args.length == 1) {
-            // Pierwsza opcja - główne komendy
-            List<String> commands = new ArrayList<>(Arrays.asList("zaloz", "info", "infogracz", "zapros", "wyrzuc", "opusc", "zastepca", "sojusz", "usun", "pkt"));
-            // Dodaj admin-only komendy tylko jeśli gracz ma uprawnienie
-            if (player.hasPermission("gildia.admin")) {
-                commands.add("adminusun");
+            return Arrays.asList("zaloz", "info", "infogracz", "zapros", "dolacz", "wyrzuc", "opusc", "usun", "zastepca", "sojusz", "adminusun", "pkt", "ustawpkt");
+        }
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("info")) {
+                return new ArrayList<>(gildiaManager.getAllGildie().keySet());
             }
-            for (String cmd : commands) {
-                if (cmd.toLowerCase().startsWith(args[0].toLowerCase())) {
-                    completions.add(cmd);
-                }
+            if (args[0].equalsIgnoreCase("sojusz")) {
+                return Arrays.asList("zapros", "akceptuj", "odrzuc", "usun");
             }
-        } else if (args.length == 2) {
-            String mainCommand = args[0].toLowerCase();
-
-            switch (mainCommand) {
-                case "zapros":
-                case "wyrzuc":
-                case "infogracz":
-                    // Dodaj online graczy
-                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        if (onlinePlayer.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
-                            completions.add(onlinePlayer.getName());
-                        }
-                    }
-                    break;
-
-                case "zastepca":
-                    // Dodaj opcje dodaj/usun
-                    List<String> deputyOptions = Arrays.asList("dodaj", "usun");
-                    for (String option : deputyOptions) {
-                        if (option.toLowerCase().startsWith(args[1].toLowerCase())) {
-                            completions.add(option);
-                        }
-                    }
-                    break;
-
-                case "sojusz":
-                    // Dodaj opcje zapros/akceptuj/odrzuc/usun
-                    List<String> allianceOptions = Arrays.asList("zapros", "akceptuj", "odrzuc", "usun");
-                    for (String option : allianceOptions) {
-                        if (option.toLowerCase().startsWith(args[1].toLowerCase())) {
-                            completions.add(option);
-                        }
-                    }
-                    break;
-
-                case "info":
-                    // Dodaj nazwy gildii
-                    for (String gildiaName : gildiaManager.getAllGildie().keySet()) {
-                        if (gildiaName.toLowerCase().startsWith(args[1].toLowerCase())) {
-                            completions.add(gildiaManager.getGildia(gildiaName).getNazwa());
-                        }
-                    }
-                    break;
-
-                case "usun":
-                    // Dodaj opcję potwierdz
-                    if ("potwierdz".toLowerCase().startsWith(args[1].toLowerCase())) {
-                        completions.add("potwierdz");
-                    }
-                    break;
-
-                case "adminusun":
-                    // Dodaj nazwy gildii (tylko dla adminów)
-                    if (player.hasPermission("gildia.admin")) {
-                        for (String gildiaName : gildiaManager.getAllGildie().keySet()) {
-                            if (gildiaName.toLowerCase().startsWith(args[1].toLowerCase())) {
-                                completions.add(gildiaManager.getGildia(gildiaName).getNazwa());
-                            }
-                        }
-                    }
-                    break;
-                case "pkt":
-                    // jeśli /gildia pkt <gracz> -> podpowiedz online graczy (widoczne tylko adminom)
-                    if (player.hasPermission("gildia.admin")) {
-                        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                            if (onlinePlayer.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
-                                completions.add(onlinePlayer.getName());
-                            }
-                        }
-                    }
-                    break;
-            }
-        } else if (args.length == 3) {
-            String mainCommand = args[0].toLowerCase();
-            String subCommand = args[1].toLowerCase();
-
-            if (mainCommand.equals("zastepca") && (subCommand.equals("dodaj") || subCommand.equals("usun"))) {
-                // Dodaj członków gildii gracza
-                Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-                if (gildia != null) {
-                    for (UUID uuid : gildia.getCzlonkowie()) {
-                        Player member = Bukkit.getPlayer(uuid);
-                        if (member != null && member.getName().toLowerCase().startsWith(args[2].toLowerCase())) {
-                            completions.add(member.getName());
-                        }
-                    }
-                }
-            } else if (mainCommand.equals("sojusz") && (subCommand.equals("zapros") || subCommand.equals("usun"))) {
-                // Dodaj nazwy innych gildii (dla zapros i usun)
-                for (String gildiaName : gildiaManager.getAllGildie().keySet()) {
-                    Gildia gildia = gildiaManager.getGildia(gildiaName);
-                    if (gildia != null && !gildia.czyCzlonek(player.getUniqueId())) {
-                        if (gildia.getNazwa().toLowerCase().startsWith(args[2].toLowerCase())) {
-                            completions.add(gildia.getNazwa());
-                        }
-                    }
-                }
-            } else if (mainCommand.equals("sojusz") && (subCommand.equals("akceptuj") || subCommand.equals("odrzuc"))) {
-                // Dodaj nazwy gildii, które wysłały zaproszenia
-                Gildia playerGildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-                if (playerGildia != null) {
-                    for (String zaproszenie : playerGildia.getZaproszeniaSojuszy()) {
-                        Gildia zaproszeniaGildia = gildiaManager.getGildia(zaproszenie);
-                        if (zaproszeniaGildia != null && zaproszeniaGildia.getNazwa().toLowerCase().startsWith(args[2].toLowerCase())) {
-                            completions.add(zaproszeniaGildia.getNazwa());
-                        }
-                    }
-                }
+            if (args[0].equalsIgnoreCase("zastepca")) {
+                return Arrays.asList("dodaj", "usun");
             }
         }
-
-        return completions;
+        return null;
     }
 
     private void handleDeleteGildia(Player player, boolean confirmed) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-        if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Nie należysz do żadnej gildii!");
-            return;
-        }
-
-        if (!gildia.czyLider(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Tylko lider może usunąć gildię!");
+        if (gildia == null || !gildia.czyLider(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie jesteś liderem żadnej gildii."));
             return;
         }
 
         if (!confirmed) {
-            player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-            player.sendMessage(ChatColor.RED + "UWAGA! Ta akcja jest nieodwracalna!");
-            player.sendMessage(ChatColor.YELLOW + "Usuniesz gildię: " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa());
-            player.sendMessage(ChatColor.YELLOW + "Członkowie: " + ChatColor.WHITE + gildia.getCzlonkowie().size());
-            player.sendMessage(ChatColor.YELLOW + "Punkty: " + ChatColor.WHITE + gildia.getPunkty());
-            player.sendMessage(ChatColor.RED + "Aby potwierdzić użyj: " + ChatColor.WHITE + "/gildia usun potwierdz");
-            player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c&lJesteś pewien? &7Użyj &c/gildia usun potwierdz&7, aby na zawsze usunąć gildię. Tej akcji nie można cofnąć."));
             return;
         }
 
-        // Powiadom wszystkich członków
-        for (UUID uuid : gildia.getCzlonkowie()) {
-            Player member = Bukkit.getPlayer(uuid);
-            if (member != null && member.isOnline()) {
-                member.sendMessage(ChatColor.RED + "Gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.RED + " została usunięta przez lidera!");
-            }
-        }
-
-        // Usuń gildię
         gildiaManager.deleteGildia(gildia.getNazwa());
-        player.sendMessage(ChatColor.GREEN + "Gildia została pomyślnie usunięta!");
+        Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', "&5Gildia &d" + gildia.getNazwa() + " &5została rozwiązana przez lidera."));
     }
 
     private void handlePlayerInfo(Player player, Player targetPlayer) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(targetPlayer.getUniqueId());
-
-        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
-        player.sendMessage(ChatColor.AQUA + "Informacje o graczu: " + ChatColor.WHITE + targetPlayer.getName());
-
-        if (gildia == null) {
-            player.sendMessage(ChatColor.YELLOW + "Status: " + ChatColor.RED + "Nie należy do żadnej gildii");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5══════════ &dInformacje o graczu &5══════════"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGracz: &d" + targetPlayer.getName()));
+        if (gildia != null) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGildia: &d" + gildia.getNazwa() + " [" + gildia.getTag() + "]"));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPunkty: &d" + gildia.getPunktyGracza(targetPlayer.getUniqueId())));
         } else {
-            player.sendMessage(ChatColor.YELLOW + "Gildia: " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + gildia.getNazwa());
-
-            String rank;
-            if (gildia.czyLider(targetPlayer.getUniqueId())) {
-                rank = ChatColor.GOLD + "Lider";
-            } else if (gildia.czyZastepca(targetPlayer.getUniqueId())) {
-                rank = ChatColor.YELLOW + "Zastępca";
-            } else {
-                rank = ChatColor.WHITE + "Członek";
-            }
-            player.sendMessage(ChatColor.YELLOW + "Ranga: " + rank);
-            player.sendMessage(ChatColor.YELLOW + "Punkty gildii: " + ChatColor.GREEN + gildia.getPunkty());
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGildia: &7Brak"));
         }
-
-        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5═════════════════════════════════════════"));
     }
 
     private void handleAdminDeleteGildia(Player player, String gildiaName, String powod) {
-        Gildia gildia = gildiaManager.getGildia(gildiaName);
-        if (gildia == null) {
-            player.sendMessage(ChatColor.RED + "Gildia o nazwie " + gildiaName + " nie istnieje!");
+        if (!player.hasPermission("gildia.admin")) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie masz uprawnień."));
             return;
         }
-
-        // Powiadom wszystkich członków gildii
-        for (UUID uuid : gildia.getCzlonkowie()) {
-            Player member = Bukkit.getPlayer(uuid);
-            if (member != null && member.isOnline()) {
-                member.sendMessage(ChatColor.RED + "Twoja gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.RED + " została usunięta przez administratora!");
-                member.sendMessage(ChatColor.YELLOW + "Powód: " + ChatColor.WHITE + powod);
-            }
+        Gildia gildia = gildiaManager.getGildia(gildiaName);
+        if (gildia == null) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
+            return;
         }
-
-        // Ogłoszenie publiczne na całym serwerze
-        String publicMessage = ChatColor.GOLD + "★ " + ChatColor.RED + "ADMIN " + ChatColor.YELLOW + player.getName()
-                + ChatColor.RED + " usunął gildię " + ChatColor.AQUA + "[" + gildia.getTag() + "] "
-                + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.GOLD + " ★";
-        String reasonMessage = ChatColor.YELLOW + "Powód: " + ChatColor.WHITE + powod;
-
-        Bukkit.broadcastMessage(publicMessage);
-        Bukkit.broadcastMessage(reasonMessage);
-
-        // Usuń gildię
-        gildiaManager.deleteGildia(gildia.getNazwa());
-        player.sendMessage(ChatColor.GREEN + "Gildia " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.YELLOW + gildia.getNazwa() + ChatColor.GREEN + " została pomyślnie usunięta!");
+        gildiaManager.deleteGildia(gildiaName);
+        Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', "&c&lGildia &4" + gildia.getNazwa() + " &c&lzostała usunięta przez administratora &4" + player.getName() + "&c&l. Powód: &4" + powod));
     }
 }

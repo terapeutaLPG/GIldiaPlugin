@@ -19,12 +19,25 @@ public class GildiaManager {
     private GildiaPlugin plugin;
     private Map<String, Gildia> gildie;
     private Map<UUID, String> graczGildia;
+    private Map<UUID, String> pendingInvites = new HashMap<>();
 
     public GildiaManager(GildiaPlugin plugin) {
         this.plugin = plugin;
         this.gildie = new HashMap<>();
         this.graczGildia = new HashMap<>();
         loadGildie();
+    }
+
+    public void addInvite(UUID player, String gildiaName) {
+        pendingInvites.put(player, gildiaName);
+    }
+
+    public String getInvite(UUID player) {
+        return pendingInvites.get(player);
+    }
+
+    public void removeInvite(UUID player) {
+        pendingInvites.remove(player);
     }
 
     public boolean createGildia(String nazwa, String tag, UUID lider) {

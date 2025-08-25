@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+
 public class Gildia {
 
     private String nazwa;
@@ -210,5 +214,14 @@ public class Gildia {
 
     public boolean czyMozeZarzadzac(UUID gracz) {
         return czyLider(gracz) || czyZastepca(gracz);
+    }
+
+    public void broadcastToMembers(String message) {
+        for (UUID uuid : czlonkowie) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline()) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d&l[GILDIA] &5" + message));
+            }
+        }
     }
 }

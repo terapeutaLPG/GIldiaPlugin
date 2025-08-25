@@ -1,8 +1,5 @@
 package pl.gildia.listeners;
 
-import java.lang.reflect.Method;
-import java.util.logging.Level;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -48,47 +45,12 @@ public class ChatListener implements Listener {
         // Normalny globalny chat - anuluj i sformatuj
         event.setCancelled(true);
 
-        // Spróbuj pobrać prefix (ranga) przez Vault Chat (jeśli dostępny) - używamy reflection aby nie wymagać zależności
+        // Spróbuj pobrać prefix (ranga) przez Vault Chat (jeśli dostępny)
         String prefix = "";
-        try {
-            Class<?> chatClass = Class.forName("net.milkbowl.vault.chat.Chat");
-            org.bukkit.plugin.RegisteredServiceProvider<?> rsp = plugin.getServer().getServicesManager().getRegistration(chatClass);
-            if (rsp != null && rsp.getProvider() != null) {
-                Object chatProvider = rsp.getProvider();
-                Method m = null;
-                try {
-                    m = chatProvider.getClass().getMethod("getPlayerPrefix", String.class, String.class);
-                    Object res = m.invoke(chatProvider, player.getWorld().getName(), player.getName());
-                    if (res != null) {
-                        prefix = res.toString();
-                    }
-                } catch (NoSuchMethodException ns) {
-                    try {
-                        m = chatProvider.getClass().getMethod("getPlayerPrefix", String.class);
-                        Object res = m.invoke(chatProvider, player.getName());
-                        if (res != null) {
-                            prefix = res.toString();
-                        }
-                    } catch (NoSuchMethodException ignored) {
-                    }
-                }
-            }
-        } catch (ClassNotFoundException cnf) {
-            // Vault nie jest zainstalowany - fallback
-        } catch (Exception ex) {
-            plugin.getLogger().log(Level.FINE, "Vault chat prefix reflection failed", ex);
-        }
-
-        // Fallback: proste permission-based ranky (konfigurowalne w LuckPerms przez przydzielanie permissionów gildia.rank.*)
-        if (prefix == null || prefix.isEmpty()) {
-            if (player.hasPermission("gildia.rank.admin")) {
-                prefix = "[ADMIN]"; 
-            }else if (player.hasPermission("gildia.rank.mod")) {
-                prefix = "[MOD]"; 
-            }else if (player.hasPermission("gildia.rank.vip")) {
-                prefix = "[VIP]"; 
-            }else {
-                prefix = "";
+        if (plugin.getServer().getPluginManager().getPlugin("Vault") != null) {
+            net.milkbowl.vault.chat.Chat chat = plugin.getServer().getServicesManager().load(net.milkbowl.vault.chat.Chat.class);
+            if (chat != null) {
+                prefix = chat.getPlayerPrefix(player);
             }
         }
 
@@ -96,20 +58,18 @@ public class ChatListener implements Listener {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
         String tagPart = "";
         if (gildia != null) {
-            tagPart = ChatColor.LIGHT_PURPLE + "[" + gildia.getTag() + "] " + ChatColor.RESET;
+            tagPart = "&d[" + gildia.getTag() + "]&r ";
         }
 
-        // Nick w kolorze szarym
-        String nickPart = ChatColor.GRAY + player.getName() + ChatColor.RESET;
+        String chatFormat = plugin.getConfig().getString("chat-format", "{PREFIX} {TAG}{PLAYER}&7: &f{MESSAGE}");
 
-        // Jeśli prefix jest niepusty i różny od domyślnego, pokaż przed tagiem
-        String displayPrefix = "";
-        if (prefix != null && !prefix.trim().isEmpty()) {
-            displayPrefix = ChatColor.GOLD + prefix + " " + ChatColor.RESET;
-        }
+        String finalMessage = chatFormat
+                .replace("{PREFIX}", prefix != null ? prefix : "")
+                .replace("{TAG}", tagPart)
+                .replace("{PLAYER}", player.getName())
+                .replace("{MESSAGE}", message);
 
-        // Finalny format: [prefix] [TAG] nick: message
-        String finalMessage = displayPrefix + tagPart + nickPart + ChatColor.WHITE + ": " + ChatColor.RESET + message;
+        finalMessage = ChatColor.translateAlternateColorCodes('&', finalMessage);
 
         // Wyślij synchronnie
         String out = finalMessage;
