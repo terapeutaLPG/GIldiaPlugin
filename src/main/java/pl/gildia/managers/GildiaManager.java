@@ -222,6 +222,12 @@ public class GildiaManager {
             }
             gildiaSection.set("czlonkowie", czlonkowie);
 
+            // Zapisz punkty członków
+            ConfigurationSection punktySection = gildiaSection.createSection("punktyCzlonkow");
+            for (Map.Entry<UUID, Integer> e : gildia.getPunktyCzlonkow().entrySet()) {
+                punktySection.set(e.getKey().toString(), e.getValue());
+            }
+
             List<String> zastepcy = new ArrayList<>();
             for (UUID uuid : gildia.getZastepcy()) {
                 zastepcy.add(uuid.toString());
@@ -281,6 +287,22 @@ public class GildiaManager {
 
             List<String> zaproszeniaSojuszy = gildiaSection.getStringList("zaproszeniaSojuszy");
             gildia.setZaproszeniaSojuszy(new ArrayList<>(zaproszeniaSojuszy));
+
+            // Wczytaj punkty członków
+            if (gildiaSection.contains("punktyCzlonkow")) {
+                ConfigurationSection punktySection = gildiaSection.getConfigurationSection("punktyCzlonkow");
+                Map<UUID, Integer> punktyMap = new HashMap<>();
+                for (String uuidStr : punktySection.getKeys(false)) {
+                    try {
+                        UUID id = UUID.fromString(uuidStr);
+                        int val = punktySection.getInt(uuidStr);
+                        punktyMap.put(id, val);
+                    } catch (Exception ex) {
+                        // ignore malformed
+                    }
+                }
+                gildia.setPunktyCzlonkow(punktyMap);
+            }
 
             // Wczytaj datę założenia
             if (gildiaSection.contains("dataZalozenia")) {

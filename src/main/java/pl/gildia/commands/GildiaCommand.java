@@ -137,6 +137,36 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
                 handleAdminDeleteGildia(player, args[1], powod.toString());
                 break;
 
+            case "ustawpkt":
+                if (!player.hasPermission("gildia.admin")) {
+                    player.sendMessage(ChatColor.RED + "Nie masz uprawnień do używania tej komendy!");
+                    return true;
+                }
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "Użyj: /gildia ustawpkt <gracz> <punkty>");
+                    return true;
+                }
+                Player tgt = Bukkit.getPlayer(args[1]);
+                if (tgt == null) {
+                    player.sendMessage(ChatColor.RED + "Gracz " + args[1] + " nie jest online!");
+                    return true;
+                }
+                try {
+                    int value = Integer.parseInt(args[2]);
+                    Gildia gildia = gildiaManager.getGildiaByPlayer(tgt.getUniqueId());
+                    if (gildia == null) {
+                        player.sendMessage(ChatColor.RED + "Gracz nie należy do żadnej gildii!");
+                        return true;
+                    }
+                    gildia.setPunktyGracza(tgt.getUniqueId(), value);
+                    gildiaManager.saveGildie();
+                    gildiaManager.updatePlayerDisplayName(tgt.getUniqueId());
+                    player.sendMessage(ChatColor.GREEN + "Ustawiono punkty gracza " + tgt.getName() + " na " + value);
+                } catch (NumberFormatException e) {
+                    player.sendMessage(ChatColor.RED + "Niepoprawna liczba: " + args[2]);
+                }
+                break;
+
             default:
                 sendHelp(player);
                 break;

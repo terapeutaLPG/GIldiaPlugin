@@ -2,7 +2,9 @@ package pl.gildia.models;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class Gildia {
@@ -16,6 +18,7 @@ public class Gildia {
     private List<String> zaproszeniaSojuszy; // Zaproszenia do sojuszy oczekujące na akceptację
     private int punkty;
     private Date dataZalozenia;
+    private Map<UUID, Integer> punktyCzlonkow; // punkty przypisane do poszczególnych graczy
 
     public Gildia(String nazwa, String tag, UUID lider) {
         this.nazwa = nazwa;
@@ -27,9 +30,11 @@ public class Gildia {
         this.zaproszeniaSojuszy = new ArrayList<>();
         this.punkty = 0;
         this.dataZalozenia = new Date();
+        this.punktyCzlonkow = new HashMap<>();
 
         // Lider jest automatycznie członkiem
         this.czlonkowie.add(lider);
+        this.punktyCzlonkow.put(lider, 0);
     }
 
     public String getNazwa() {
@@ -96,6 +101,37 @@ public class Gildia {
         this.punkty = punkty;
     }
 
+    public Map<UUID, Integer> getPunktyCzlonkow() {
+        return punktyCzlonkow;
+    }
+
+    public void setPunktyCzlonkow(Map<UUID, Integer> punktyCzlonkow) {
+        this.punktyCzlonkow = punktyCzlonkow;
+    }
+
+    public int getPunktyGracza(UUID gracz) {
+        return punktyCzlonkow.getOrDefault(gracz, 0);
+    }
+
+    public void setPunktyGracza(UUID gracz, int wartosc) {
+        punktyCzlonkow.put(gracz, Math.max(0, wartosc));
+        recomputePunktyGildii();
+    }
+
+    public void addPunktyGracza(UUID gracz, int delta) {
+        int current = punktyCzlonkow.getOrDefault(gracz, 0);
+        punktyCzlonkow.put(gracz, Math.max(0, current + delta));
+        recomputePunktyGildii();
+    }
+
+    private void recomputePunktyGildii() {
+        int sum = 0;
+        for (Integer v : punktyCzlonkow.values()) {
+            sum += v;
+        }
+        this.punkty = sum;
+    }
+
     public Date getDataZalozenia() {
         return dataZalozenia;
     }
@@ -115,12 +151,15 @@ public class Gildia {
     public void dodajCzlonka(UUID gracz) {
         if (!czlonkowie.contains(gracz)) {
             czlonkowie.add(gracz);
+            // inicjalizuj punkty dla nowego członka
+            punktyCzlonkow.putIfAbsent(gracz, 0);
         }
     }
 
     public void usunCzlonka(UUID gracz) {
         czlonkowie.remove(gracz);
         zastepcy.remove(gracz);
+        punktyCzlonkow.remove(gracz);
     }
 
     public void dodajZastepce(UUID gracz) {

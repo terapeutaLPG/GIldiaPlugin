@@ -53,16 +53,28 @@ public class PlayerDisplayListener implements Listener {
                 + ", gildia: " + (gildia != null ? gildia.getNazwa() + " [" + gildia.getTag() + "]" : "brak"));
 
         if (gildia != null) {
-            // Ustaw tag gildii w TAB (player list)
-            String playerListName = ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName();
+            // określ rangę
+            String ranga = "Czlonek";
+            if (gildia.czyLider(player.getUniqueId())) {
+                ranga = "Lider"; 
+            }else if (gildia.czyZastepca(player.getUniqueId())) {
+                ranga = "Zastepca";
+            }
+
+            // Ustaw tag gildii w TAB (player list) i dodaj punkty
+            int pkt = gildia.getPunktyGracza(player.getUniqueId());
+            String playerListName = "(" + ranga + ") " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName() + ChatColor.GRAY + " (" + pkt + ")";
             if (playerListName.length() > 16) {
                 // Skróć jeśli za długi dla starszych wersji
-                playerListName = ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName().substring(0, Math.min(player.getName().length(), 16 - gildia.getTag().length() - 4));
+                String base = "(" + ranga + ") " + "[" + gildia.getTag() + "] ";
+                int remain = 16 - base.length() - 4; // leave space for colors
+                String namePart = player.getName().substring(0, Math.min(player.getName().length(), Math.max(1, remain)));
+                playerListName = "(" + ranga + ") " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + namePart;
             }
             player.setPlayerListName(playerListName);
 
-            // Ustaw display name dla czatu
-            String displayName = ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName();
+            // Ustaw display name dla czatu: (ranga) [TAG] Nick (pkt)
+            String displayName = "(" + ranga + ") " + ChatColor.AQUA + "[" + gildia.getTag() + "] " + ChatColor.WHITE + player.getName() + ChatColor.GRAY + " (" + pkt + ")";
             player.setDisplayName(displayName);
 
             plugin.getLogger().info("DEBUG: Ustawiono displayName: " + displayName);
