@@ -19,6 +19,7 @@ public class Gildia {
     private List<String> sojusze;
     private List<String> zaproszeniaSojuszy; // Zaproszenia do sojuszy oczekujące na akceptację
     private Date dataZalozenia;
+    private boolean friendlyFireDisabled; // Czy friendly fire jest wyłączony
 
     public Gildia(String nazwa, String tag, UUID lider) {
         this.nazwa = nazwa;
@@ -29,6 +30,7 @@ public class Gildia {
         this.sojusze = new ArrayList<>();
         this.zaproszeniaSojuszy = new ArrayList<>();
         this.dataZalozenia = new Date();
+        this.friendlyFireDisabled = false; // Domyślnie friendly fire jest włączony
 
         // Lider jest automatycznie członkiem
         this.czlonkowie.add(lider);
@@ -166,5 +168,13 @@ public class Gildia {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d&l[GILDIA] &5" + message));
             }
         }
+    }
+
+    public boolean isFriendlyFireDisabled() {
+        return friendlyFireDisabled;
+    }
+
+    public void setFriendlyFireDisabled(boolean friendlyFireDisabled) {
+        this.friendlyFireDisabled = friendlyFireDisabled;
     }
 }

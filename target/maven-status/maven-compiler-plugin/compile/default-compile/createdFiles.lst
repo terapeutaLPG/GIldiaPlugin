@@ -1,10 +1,11 @@
 pl\gildia\listeners\PlayerDisplayListener$1.class
-pl\gildia\listeners\TagDebugListener$1.class
-pl\gildia\GildiaPlugin.class
 pl\gildia\models\Gildia.class
 pl\gildia\listeners\PlayerDisplayListener.class
-pl\gildia\listeners\TagDebugListener.class
-pl\gildia\managers\GildiaManager.class
 pl\gildia\listeners\ChatListener.class
 pl\gildia\commands\GildiaCommand.class
 pl\gildia\listeners\PlayerDisplayListener$2.class
+pl\gildia\listeners\PvPListener.class
+pl\gildia\listeners\TagDebugListener$1.class
+pl\gildia\GildiaPlugin.class
+pl\gildia\listeners\TagDebugListener.class
+pl\gildia\managers\GildiaManager.class

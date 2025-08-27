@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import me.clip.placeholderapi.PlaceholderAPI;
 import pl.gildia.GildiaPlugin;
 import pl.gildia.managers.GildiaManager;
 import pl.gildia.models.Gildia;
@@ -132,6 +133,10 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 handleAdminDeleteGildia(player, args[1], String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
+                break;
+
+            case "friendlyfire":
+                handleFriendlyFire(player);
                 break;
 
             default:
@@ -496,10 +501,10 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
         // Statystyki PvP Stats
         if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null
                 && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
-            String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_kills%");
-            String deaths = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_deaths%");
-            String streak = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_streak%");
-            String elo = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_elo%");
+            String kills = PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_kills%");
+            String deaths = PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_deaths%");
+            String streak = PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_streak%");
+            String elo = PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_elo%");
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fZabójstwa: &d" + kills));
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fŚmierci: &d" + deaths));
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPassa: &d" + streak));
@@ -522,5 +527,31 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
         }
         gildiaManager.deleteGildia(gildiaName);
         Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', "&c&lGildia &4" + gildia.getNazwa() + " &c&lzostała usunięta przez administratora &4" + player.getName() + "&c&l. Powód: &4" + powod));
+    }
+
+    private void handleFriendlyFire(Player player) {
+        Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
+
+        if (gildia == null) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie należysz do żadnej gildii!"));
+            return;
+        }
+
+        if (!gildia.czyLider(player.getUniqueId())) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTylko lider gildii może zmieniać ustawienia friendly fire!"));
+            return;
+        }
+
+        boolean newState = !gildia.isFriendlyFireDisabled();
+        gildia.setFriendlyFireDisabled(newState);
+        gildiaManager.saveGildie();
+
+        if (newState) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aFriendly Fire został &cWYŁĄCZONY &a- członkowie gildii nie mogą się między sobą bić"));
+            gildia.broadcastToMembers("&5Lider &d" + player.getName() + " &5wyłączył friendly fire - członkowie gildii nie mogą się bić");
+        } else {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aFriendly Fire został &aWŁĄCZONY &a- członkowie gildii mogą się między sobą bić"));
+            gildia.broadcastToMembers("&5Lider &d" + player.getName() + " &5włączył friendly fire - członkowie gildii mogą się bić");
+        }
     }
 }

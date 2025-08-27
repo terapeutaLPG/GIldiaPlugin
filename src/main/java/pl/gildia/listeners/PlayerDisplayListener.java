@@ -12,6 +12,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import me.clip.placeholderapi.PlaceholderAPI;
 import pl.gildia.GildiaPlugin;
 import pl.gildia.managers.GildiaManager;
 import pl.gildia.models.Gildia;
@@ -85,9 +86,18 @@ public class PlayerDisplayListener implements Listener {
                     && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
                 try {
                     // Używaj PlaceholderAPI do pobrania statystyk PvP Stats
-                    String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_kills%");
-                    String deaths = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_deaths%");
-                    String streak = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_streak%");
+                    // Sprawdź różne warianty placeholder'ów PvP Stats
+                    String kills = PlaceholderAPI.setPlaceholders(player, "%pvpstats_kills%");
+                    String deaths = PlaceholderAPI.setPlaceholders(player, "%pvpstats_deaths%");
+                    String streak = PlaceholderAPI.setPlaceholders(player, "%pvpstats_streak%");
+
+                    // Jeśli pierwsze nie działa, spróbuj alternatywne formaty
+                    if (kills.equals("%pvpstats_kills%")) {
+                        kills = PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_kills%");
+                        deaths = PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_deaths%");
+                        streak = PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_streak%");
+                    }
+
                     pvpStats = " " + ChatColor.GOLD + "[K:" + kills + " D:" + deaths + " S:" + streak + "]";
                 } catch (Exception e) {
                     // Jeśli wystąpi błąd, po prostu nie wyświetlaj statystyk
@@ -138,13 +148,20 @@ public class PlayerDisplayListener implements Listener {
             team.setAllowFriendlyFire(true);
         }
 
-        // ZAWSZE aktualizuj suffix z najnowszymi statystykami PvP
+        // ZAWSZE aktualizuj suffix z najnowszymi statystykami PvP (streak nad głową)
         String suffix = "";
         if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null
                 && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
             try {
-                String elo = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_elo%");
-                suffix = ChatColor.DARK_PURPLE + " [" + elo + "]";
+                // Sprawdź różne warianty placeholder'ów PvP Stats
+                String streak = PlaceholderAPI.setPlaceholders(player, "%pvpstats_streak%");
+
+                // Jeśli pierwsze nie działa, spróbuj alternatywne formaty
+                if (streak.equals("%pvpstats_streak%")) {
+                    streak = PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_streak%");
+                }
+
+                suffix = ChatColor.GOLD + " [" + streak + "]";
             } catch (Exception e) {
                 suffix = "";
             }

@@ -316,4 +316,5 @@ public class GildiaManager {
     public void updateAllPlayersDisplayNames() {
         plugin.getPlayerDisplayListener().updateAllPlayersDisplayNames();
     }
+
 }
