@@ -41,6 +41,14 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(playerDisplayListener, this);
         getServer().getPluginManager().registerEvents(new TagDebugListener(this), this);
         // KillListener usunięty - PvP Stats będzie zarządzać statystykami PvP
+
+        // Automatyczna aktualizacja statystyk co 10 sekund
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            if (playerDisplayListener != null) {
+                playerDisplayListener.updateAllPlayersDisplayNames();
+            }
+        }, 200L, 200L); // 10 sekund = 200 ticków
+
         getLogger().info("Plugin GildiaPlugin został włączony! Wymagane: PVPStats + PlaceholderAPI dla statystyk PvP.");
     }
 

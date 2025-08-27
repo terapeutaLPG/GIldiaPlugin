@@ -138,7 +138,7 @@ public class PlayerDisplayListener implements Listener {
             team.setAllowFriendlyFire(true);
         }
 
-        // Ustaw suffix z PvP Stats lub pusty
+        // ZAWSZE aktualizuj suffix z najnowszymi statystykami PvP
         String suffix = "";
         if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null
                 && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
