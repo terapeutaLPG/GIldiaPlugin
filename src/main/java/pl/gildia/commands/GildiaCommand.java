@@ -489,9 +489,23 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGracz: &d" + targetPlayer.getName()));
         if (gildia != null) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGildia: &d" + gildia.getNazwa() + " [" + gildia.getTag() + "]"));
-            // Punkty są teraz zarządzane przez PvP Stats plugin
         } else {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fGildia: &7Brak"));
+        }
+
+        // Statystyki PvP Stats
+        if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null
+                && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
+            String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_kills%");
+            String deaths = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_deaths%");
+            String streak = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_streak%");
+            String elo = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(targetPlayer, "%slipcorpvpstats_elo%");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fZabójstwa: &d" + kills));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fŚmierci: &d" + deaths));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPassa: &d" + streak));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fPunkty ELO: &d" + elo));
+        } else {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fStatystyki PvP: &7Brak (wymagane PVPStats + PlaceholderAPI)"));
         }
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5═════════════════════════════════════════"));
     }

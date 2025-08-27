@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -46,6 +47,26 @@ public class PlayerDisplayListener implements Listener {
         removeFromScoreboardTeam(player);
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        Player killer = player.getKiller();
+
+        // Opóźnienie 1 sekunda żeby PvP Stats zdążył zaktualizować statystyki
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Aktualizuj gracza który zginął
+                updatePlayerDisplayName(player);
+
+                // Aktualizuj zabójcę jeśli istnieje
+                if (killer != null) {
+                    updatePlayerDisplayName(killer);
+                }
+            }
+        }.runTaskLater(plugin, 20L); // 1 sekunda opóźnienia
+    }
+
     public void updatePlayerDisplayName(Player player) {
         Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
 
@@ -60,8 +81,8 @@ public class PlayerDisplayListener implements Listener {
 
             // Sprawdź czy PlaceholderAPI i PvP Stats są dostępne
             String pvpStats = "";
-            if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null &&
-                plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
+            if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null
+                    && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
                 try {
                     // Używaj PlaceholderAPI do pobrania statystyk PvP Stats
                     String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_kills%");
@@ -119,11 +140,11 @@ public class PlayerDisplayListener implements Listener {
 
         // Ustaw suffix z PvP Stats lub pusty
         String suffix = "";
-        if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null &&
-            plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
+        if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null
+                && plugin.getServer().getPluginManager().getPlugin("PVPStats") != null) {
             try {
-                String kills = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_kills%");
-                suffix = ChatColor.GRAY + " [" + kills + "K]";
+                String elo = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, "%slipcorpvpstats_elo%");
+                suffix = ChatColor.DARK_PURPLE + " [" + elo + "]";
             } catch (Exception e) {
                 suffix = "";
             }

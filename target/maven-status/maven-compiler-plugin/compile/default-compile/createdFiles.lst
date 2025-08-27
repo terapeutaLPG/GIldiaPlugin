@@ -7,3 +7,4 @@ pl\gildia\listeners\TagDebugListener.class
 pl\gildia\managers\GildiaManager.class
 pl\gildia\listeners\ChatListener.class
 pl\gildia\commands\GildiaCommand.class
+pl\gildia\listeners\PlayerDisplayListener$2.class

@@ -4,8 +4,7 @@ main: pl.gildia.GildiaPlugin
 api-version: 1.20
 author: jaruso99
 description: Plugin do zarządzania gildiami - zintegrowany z PVP Stats
-depend: [PVPStats, PlaceholderAPI]
-softdepend: [Vault]
+softdepend: [PVPStats, PlaceholderAPI, Vault]
 
 commands:
   gildia:
