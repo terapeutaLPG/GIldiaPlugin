@@ -1,9 +1,11 @@
 # GildiaPlugin config
+# Plugin zarządza tylko gildiami i tagami nad głowami graczy
+# Nie ingeruje w chat - do tego służą inne pluginy
 
-# Format czatu globalnego
-# Zmienne:
-# {PREFIX} - ranga gracza z Vault (np. z LuckPerms)
-# {TAG} - tag gildii
-# {PLAYER} - nick gracza
-# {MESSAGE} - wiadomość
-chat-format: "{PREFIX} {TAG}{PLAYER}&7: &f{MESSAGE}"
+# Discord Webhook dla logów administratorskich
+discord:
+  webhook:
+    enabled: false
+    url: "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL"
+    username: "GildiaPlugin Logger"
+    avatar_url: "https://i.imgur.com/4M34hi2.png"

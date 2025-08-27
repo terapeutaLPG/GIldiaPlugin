@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
@@ -66,15 +65,7 @@ public class GildiaManager {
 
         saveGildie();
 
-        // Ogłoszenie na czacie
-        Player gracz = Bukkit.getPlayer(lider);
-        if (gracz != null) {
-            String message = ChatColor.GOLD + "★ " + ChatColor.YELLOW + gracz.getName()
-                    + ChatColor.GREEN + " założył gildię " + ChatColor.AQUA + "[" + tag + "] "
-                    + ChatColor.YELLOW + nazwa + ChatColor.GOLD + " ★";
-            Bukkit.broadcastMessage(message);
-        }
-
+        // Ogłoszenie na czacie usunięte - plugin nie ingeruje w chat
         // Aktualizuj tagi graczy
         updatePlayerDisplayName(lider);
 
@@ -122,6 +113,11 @@ public class GildiaManager {
 
         Gildia gildia = gildie.get(gildiaName.toLowerCase());
         if (gildia == null) {
+            return false;
+        }
+
+        // Sprawdź limit członków (64 graczy)
+        if (gildia.getCzlonkowie().size() >= 64) {
             return false;
         }
 
@@ -179,44 +175,7 @@ public class GildiaManager {
         return true;
     }
 
-    public void sendGildiaMessage(Player sender, String message) {
-        Gildia gildia = getGildiaByPlayer(sender.getUniqueId());
-        if (gildia == null) {
-            return;
-        }
-
-        String formattedMessage = ChatColor.DARK_GREEN + "[CZAT GILDII] "
-                + ChatColor.AQUA + "[" + gildia.getTag() + "] "
-                + ChatColor.WHITE + sender.getName() + ChatColor.GRAY + ": "
-                + ChatColor.GREEN + message;
-
-        // Wyślij do wszystkich członków gildii
-        for (UUID czlonek : gildia.getCzlonkowie()) {
-            Player gracz = Bukkit.getPlayer(czlonek);
-            if (gracz != null && gracz.isOnline()) {
-                gracz.sendMessage(formattedMessage);
-            }
-        }
-
-        // Wyślij do sojuszników
-        for (String sojuszNazwa : gildia.getSojusze()) {
-            Gildia sojusz = gildie.get(sojuszNazwa);
-            if (sojusz != null) {
-                String sojuszMessage = ChatColor.DARK_GREEN + "[CZAT SOJUSZ] "
-                        + ChatColor.AQUA + "[" + gildia.getTag() + "] "
-                        + ChatColor.WHITE + sender.getName() + ChatColor.GRAY + ": "
-                        + ChatColor.GREEN + message;
-
-                for (UUID czlonek : sojusz.getCzlonkowie()) {
-                    Player gracz = Bukkit.getPlayer(czlonek);
-                    if (gracz != null && gracz.isOnline()) {
-                        gracz.sendMessage(sojuszMessage);
-                    }
-                }
-            }
-        }
-    }
-
+    // Funkcja sendGildiaMessage usunięta - plugin nie obsługuje czatu gildii
     public void saveGildie() {
         ConfigurationSection gildieSection = plugin.getGildieConfig().createSection("gildie");
 

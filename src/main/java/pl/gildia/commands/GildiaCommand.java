@@ -221,7 +221,13 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fOczekujące zaproszenia do sojuszu: &d" + String.join(", ", gildia.getZaproszeniaSojuszy())));
         }
 
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fWszyscy członkowie (" + gildia.getCzlonkowie().size() + "):"));
+        // Informacja o friendly fire (tylko dla członków gildii)
+        if (gildia.czyCzlonek(player.getUniqueId())) {
+            String ffStatus = gildia.isFriendlyFireDisabled() ? "&cWyłączone" : "&aWłączone";
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fFriendly Fire: " + ffStatus));
+        }
+
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&fWszyscy członkowie (" + gildia.getCzlonkowie().size() + "/64):"));
         for (UUID uuid : gildia.getCzlonkowie()) {
             OfflinePlayer członek = Bukkit.getOfflinePlayer(uuid);
             String ranga = "Czlonek";
@@ -254,6 +260,12 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
         if (gildiaManager.getGildiaByPlayer(target.getUniqueId()) != null) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTen gracz jest już w innej gildii."));
+            return;
+        }
+
+        // Sprawdź limit członków (64 graczy)
+        if (gildia.getCzlonkowie().size() >= 64) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia osiągnęła maksymalną liczbę członków (64)!"));
             return;
         }
 
@@ -436,19 +448,21 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(Player player) {
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5&m-----------------&d GildiaPlugin &5&m-----------------"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&7Plugin zarządza tylko gildiami - nie ingeruje w chat!"));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zaloz <tag> <nazwa> &7- Tworzy nową gildię"));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia info [nazwa] &7- Informacje o gildii"));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia infogracz <gracz> &7- Informacje o graczu"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zapros <gracz> &7- Zaprasza gracza do gildii"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zapros <gracz> &7- Zaprasza gracza do gildii (Lider/Zastępca)"));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia dolacz <nazwa> &7- Akceptuje zaproszenie do gildii"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia wyrzuc <gracz> &7- Wyrzuca gracza z gildii"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia wyrzuc <gracz> &7- Wyrzuca gracza z gildii (Lider/Zastępca)"));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia opusc &7- Opuszcza gildię"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia usun &7- Usuwa Twoją gildię"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zastepca <dodaj|usun> <gracz> &7- Zarządza zastępcami"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia sojusz <zapros|akceptuj|odrzuc|usun> <gildia> &7- Zarządza sojuszami"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia usun &7- Usuwa Twoją gildię (tylko Lider)"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia zastepca <dodaj|usun> <gracz> &7- Zarządza zastępcami (tylko Lider)"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia sojusz <zapros|akceptuj|odrzuc|usun> <gildia> &7- Zarządza sojuszami (tylko Lider)"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&d/gildia friendlyfire &7- Przełącza friendly fire w gildii (tylko Lider)"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6Limit członków: &e64 graczy na gildię"));
         if (player.hasPermission("gildia.admin")) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c/gildia adminusun <nazwa> <powod> &7- Usuwa gildię jako admin"));
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c/gildia ustawpkt <gracz> <ilosc> &7- Ustawia punkty gracza"));
         }
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&5&m--------------------------------------------------"));
     }
@@ -525,6 +539,15 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
             return;
         }
+
+        // Wyślij log na Discord przed usunięciem gildii
+        plugin.getDiscordWebhook().sendAdminDeleteGuildLog(
+                player.getName(),
+                gildia.getNazwa(),
+                gildia.getTag(),
+                powod
+        );
+
         gildiaManager.deleteGildia(gildiaName);
         Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', "&c&lGildia &4" + gildia.getNazwa() + " &c&lzostała usunięta przez administratora &4" + player.getName() + "&c&l. Powód: &4" + powod));
     }
