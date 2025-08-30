@@ -9,6 +9,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import pl.gildia.commands.GildiaCommand;
+import pl.gildia.database.DatabaseManager;
+import pl.gildia.database.MigrationManager;
+import pl.gildia.database.services.GuildService;
 import pl.gildia.listeners.PlayerDisplayListener;
 import pl.gildia.listeners.TagDebugListener;
 import pl.gildia.managers.GildiaManager;
@@ -17,12 +20,23 @@ import pl.gildia.utils.DiscordWebhook;
 public class GildiaPlugin extends JavaPlugin implements Listener {
 
     private static GildiaPlugin instance;
+
+    // YAML Manager (fallback)
     private GildiaManager gildiaManager;
-    private PlayerDisplayListener playerDisplayListener;
-    private DiscordWebhook discordWebhook;
     private File gildieFile;
     private FileConfiguration gildieConfig;
+
+    // MySQL/Database
+    private DatabaseManager databaseManager;
+    private GuildService guildService;
+    private MigrationManager migrationManager;
+
+    // Inne komponenty
+    private PlayerDisplayListener playerDisplayListener;
+    private DiscordWebhook discordWebhook;
     private FileConfiguration mainConfig;
+
+    private boolean useDatabase = false;
 
     @Override
     public void onEnable() {
@@ -37,24 +51,77 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
                 getLogger().severe("Nie można utworzyć folderu pluginu: " + dataFolder.getAbsolutePath());
                 return;
             }
-        } else {
-            getLogger().info("Folder pluginu już istnieje: " + dataFolder.getAbsolutePath());
         }
 
         saveDefaultConfig();
         mainConfig = getConfig();
+
+        // Inicjalizacja bazy danych
+        databaseManager = new DatabaseManager(this);
+
+        databaseManager.initialize().thenAccept(success -> {
+            if (success) {
+                useDatabase = true;
+                getLogger().info("Używam MySQL do przechowywania danych gildii");
+
+                // Inicjalizuj serwisy MySQL
+                guildService = new GuildService(this, databaseManager);
+                migrationManager = new MigrationManager(this, databaseManager);
+
+                // Wykonaj migrację jeśli potrzebna
+                if (!migrationManager.isMigrationDone()) {
+                    migrationManager.migrate().thenRun(() -> {
+                        // Załaduj cache po migracji
+                        guildService.loadCache().thenRun(() -> {
+                            getLogger().info("Migracja i ładowanie cache zakończone");
+                        });
+                    });
+                } else {
+                    // Załaduj cache
+                    guildService.loadCache().thenRun(() -> {
+                        getLogger().info("Cache gildii załadowany z MySQL");
+                    });
+                }
+
+            } else {
+                useDatabase = false;
+                getLogger().info("Używam YAML do przechowywania danych gildii");
+
+                // Fallback na YAML
+                initializeYamlManager();
+            }
+        }).exceptionally(throwable -> {
+            getLogger().severe("Błąd inicjalizacji bazy danych - używam YAML");
+            useDatabase = false;
+            initializeYamlManager();
+            return null;
+        });
+
+        // Inicjalizuj pozostałe komponenty (niezależnie od DB/YAML)
+        initializeComponents();
+    }
+
+    /**
+     * Inicjalizuje YAML manager jako fallback
+     */
+    private void initializeYamlManager() {
         createGildieFile();
         gildiaManager = new GildiaManager(this);
+    }
+
+    /**
+     * Inicjalizuje komponenty pluginu
+     */
+    private void initializeComponents() {
         discordWebhook = new DiscordWebhook(this);
         GildiaCommand gildiaCommand = new GildiaCommand(this);
         getCommand("gildia").setExecutor(gildiaCommand);
         getCommand("gildia").setTabCompleter(gildiaCommand);
-        // ChatListener usunięty - plugin nie będzie ingerować w chat
+        // ChatListener usunięty - plugin nie ingeruje w chat
         playerDisplayListener = new PlayerDisplayListener(this);
         getServer().getPluginManager().registerEvents(playerDisplayListener, this);
         getServer().getPluginManager().registerEvents(new TagDebugListener(this), this);
         getServer().getPluginManager().registerEvents(new pl.gildia.listeners.PvPListener(this), this);
-        // KillListener usunięty - PvP Stats będzie zarządzać statystykami PvP
 
         // Automatyczna aktualizacja statystyk co 10 sekund
         getServer().getScheduler().runTaskTimer(this, () -> {
@@ -66,12 +133,17 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
         // Sprawdź status folderu i plików (dla debugowania)
         checkDataFolderStatus();
 
-        getLogger().info("Plugin GildiaPlugin został włączony! Wymagane: PVPStats + PlaceholderAPI dla statystyk PvP.");
+        String dbType = useDatabase ? "MySQL" : "YAML";
+        getLogger().info("Plugin GildiaPlugin został włączony! Używa: " + dbType + " | Wymagane: PVPStats + PlaceholderAPI");
     }
 
     @Override
     public void onDisable() {
-        saveGildieConfig();
+        if (useDatabase && databaseManager != null) {
+            databaseManager.shutdown();
+        } else if (gildieConfig != null) {
+            saveGildieConfig();
+        }
         getLogger().info("Plugin GildiaPlugin został wyłączony!");
     }
 
@@ -161,6 +233,14 @@ public class GildiaPlugin extends JavaPlugin implements Listener {
 
     public GildiaManager getGildiaManager() {
         return gildiaManager;
+    }
+
+    public GuildService getGuildService() {
+        return guildService;
+    }
+
+    public boolean isUsingDatabase() {
+        return useDatabase;
     }
 
     public PlayerDisplayListener getPlayerDisplayListener() {

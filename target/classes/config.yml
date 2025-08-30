@@ -2,6 +2,27 @@
 # Plugin zarządza tylko gildiami i tagami nad głowami graczy
 # Nie ingeruje w chat - do tego służą inne pluginy
 
+# Konfiguracja bazy danych
+database:
+  enabled: true
+  host: "127.0.0.1"
+  port: 3306
+  name: "gildie"
+  user: "gildie_user"
+  password: "super_tajne"
+
+  # Ustawienia puli połączeń HikariCP
+  pool:
+    maximum-pool-size: 10
+    minimum-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+
+# Migracja z YAML do MySQL
+migration:
+  done: false
+
 # Discord Webhook dla logów administratorskich
 discord:
   webhook:

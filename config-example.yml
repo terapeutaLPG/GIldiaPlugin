@@ -1,0 +1,36 @@
+# GildiaPlugin - Przykładowa konfiguracja
+# Skopiuj ten plik do config.yml i dostosuj do swoich potrzeb
+
+# Konfiguracja bazy danych
+database:
+  enabled: true # Czy używać MySQL (true) czy YAML (false)
+  host: "127.0.0.1" # Adres IP serwera MySQL
+  port: 3306 # Port MySQL (domyślnie 3306)
+  name: "gildie" # Nazwa bazy danych
+  user: "gildie_user" # Nazwa użytkownika MySQL
+  password: "super_tajne" # Hasło do MySQL
+
+  # Ustawienia puli połączeń HikariCP
+  pool:
+    maximum-pool-size: 10 # Maksymalna liczba połączeń w puli
+    minimum-idle: 2 # Minimalna liczba bezczynnych połączeń
+    connection-timeout: 30000 # Timeout nawiązywania połączenia (ms)
+    idle-timeout: 600000 # Timeout bezczynności połączenia (ms)
+    max-lifetime: 1800000 # Maksymalny czas życia połączenia (ms)
+
+# Migracja z YAML do MySQL
+migration:
+  done: false # Czy migracja została wykonana (nie zmieniaj ręcznie)
+
+# Discord Webhook dla logów administratorskich
+discord:
+  webhook:
+    enabled: false # Czy włączyć webhook do Discord
+    url: "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL"
+    username: "GildiaPlugin Logger"
+    avatar_url: "https://i.imgur.com/4M34hi2.png"
+# UWAGI:
+# 1. Jeśli database.enabled = false, plugin będzie używać YAML (gildie.yml)
+# 2. Jeśli MySQL nie jest dostępne, plugin automatycznie przełączy się na YAML
+# 3. Migracja z YAML do MySQL jest automatyczna przy pierwszym uruchomieniu
+# 4. Discord webhook wysyła powiadomienia o działaniach administratorskich

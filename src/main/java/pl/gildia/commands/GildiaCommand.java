@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -18,15 +19,21 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import pl.gildia.GildiaPlugin;
 import pl.gildia.managers.GildiaManager;
 import pl.gildia.models.Gildia;
+import pl.gildia.database.services.GuildService;
+import pl.gildia.database.entities.GuildEntity;
 
 public class GildiaCommand implements CommandExecutor, TabCompleter {
 
     private final GildiaPlugin plugin;
     private final GildiaManager gildiaManager;
+    private final GuildService guildService;
+    private final boolean useDatabase;
 
     public GildiaCommand(GildiaPlugin plugin) {
         this.plugin = plugin;
         this.gildiaManager = plugin.getGildiaManager();
+        this.guildService = plugin.getGuildService();
+        this.useDatabase = plugin.isUsingDatabase();
     }
 
     @Override
@@ -153,7 +160,15 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (gildiaManager.createGildia(nazwa, tag, player.getUniqueId())) {
+        if (useDatabase && guildService != null) {
+            guildService.createGuild(nazwa, tag, player.getUniqueId()).thenAccept(success -> {
+                if (!success) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTaka gildia już istnieje lub jesteś już w innej gildii."));
+                    });
+                }
+            });
+        } else if (gildiaManager.createGildia(nazwa, tag, player.getUniqueId())) {
             // Wiadomość o sukcesie jest wysyłana globalnie z GildiaManager
         } else {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTaka gildia już istnieje lub jesteś już w innej gildii."));
@@ -161,21 +176,39 @@ public class GildiaCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleOwnGildiaInfo(Player player) {
-        Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
-        if (gildia == null) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie należysz do żadnej gildii."));
-            return;
+        if (useDatabase && guildService != null) {
+            GuildEntity guildEntity = guildService.getPlayerGuild(player.getUniqueId());
+            if (guildEntity == null) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie należysz do żadnej gildii."));
+            } else {
+                showGuildEntityInfo(player, guildEntity);
+            }
+        } else {
+            Gildia gildia = gildiaManager.getGildiaByPlayer(player.getUniqueId());
+            if (gildia == null) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cNie należysz do żadnej gildii."));
+                return;
+            }
+            showGildiaInfo(player, gildia);
         }
-        showGildiaInfo(player, gildia);
     }
 
     private void handleGildiaInfo(Player player, String nazwa) {
-        Gildia gildia = gildiaManager.getGildia(nazwa);
-        if (gildia == null) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
-            return;
+        if (useDatabase && guildService != null) {
+            GuildEntity guildEntity = guildService.getGuildByName(nazwa);
+            if (guildEntity == null) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
+            } else {
+                showGuildEntityInfo(player, guildEntity);
+            }
+        } else {
+            Gildia gildia = gildiaManager.getGildia(nazwa);
+            if (gildia == null) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cGildia o tej nazwie nie istnieje."));
+                return;
+            }
+            showGildiaInfo(player, gildia);
         }
-        showGildiaInfo(player, gildia);
     }
 
     private void showGildiaInfo(Player player, Gildia gildia) {
