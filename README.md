@@ -200,4 +200,4 @@ Plugin obsługuje automatyczne uzupełnianie komend:
 
 ## Autor
 
-Stworzony dla serwera Minecraft
+jaruso99 - dsc: aniol!2000
